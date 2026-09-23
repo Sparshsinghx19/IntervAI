@@ -1,0 +1,23 @@
+// use prisma-next
+
+enum InterviewType {
+  TECHNICAL
+  BEHAVIORAL
+  HR
+}
+
+enum InterviewDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+model Interview {
+  id            Uuid                @id @default(uuid())
+  type          InterviewType
+  difficulty    InterviewDifficulty
+  focusArea     String
+  questionCount Int
+  createdAt     DateTime            @default(now())
+  updatedAt     temporal.updatedAt()
+}
