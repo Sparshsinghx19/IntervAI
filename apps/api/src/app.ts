@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
-import { healthRouter } from './modules/health/health.route';
-import { interviewRouter } from './modules/interviews/interview.route';
+import { healthRouter } from './modules/health/health.route.js';
+import { interviewRouter } from './modules/interviews/interview.route.js';
 
 const app = express();
 

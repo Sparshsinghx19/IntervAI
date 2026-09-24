@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { healthService } from './health.service';
+import { healthService } from './health.service.js';
 
 export const healthController = {
   getHealth: (req: Request, res: Response) => {

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { interviewController } from './interview.controller';
+import { interviewController } from './interview.controller.js';
 
 const interviewRouter = Router();
 
