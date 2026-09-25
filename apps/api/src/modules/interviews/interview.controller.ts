@@ -63,5 +63,31 @@ export const interviewController = {
       console.error('Failed to create interview:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
+  },
+
+  getInterviewById: async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+
+      if (!id || typeof id !== 'string') {
+        return res.status(400).json({ error: 'Interview ID is required and must be a string' });
+      }
+
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(id)) {
+        return res.status(400).json({ error: 'Invalid Interview ID format' });
+      }
+
+      const interview = await interviewService.getInterviewById(id as string);
+
+      if (!interview) {
+        return res.status(404).json({ error: 'Interview not found' });
+      }
+
+      res.status(200).json(interview);
+    } catch (error) {
+      console.error('Failed to get interview by ID:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
   }
 };
