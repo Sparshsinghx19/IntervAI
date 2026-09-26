@@ -34,9 +34,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'1970e66a4bebbf054e6a95c3958c1f91d9ec0ee168f37f615665f2cbed4eec0d'>;
+  StorageHashBase<'124c6a2ac76130f48f42717c9ba93ae7a09cf2b5b8155dff8fecff56f2f44386'>;
 export type ExecutionHash =
-  ExecutionHashBase<'45ea67a6ad2f37bfd7676c60a70127b8417b69fdc00ea27c24ff968589f9dfd9'>;
+  ExecutionHashBase<'fa3743a3690ef5e9448a426d6d1248fc005e28bf67fa93129d619e6869dd30b1'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -251,6 +251,14 @@ export type FieldOutputTypes = {
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     };
+    readonly Question: {
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly interviewId: CodecTypes['pg/uuid@1']['output'];
+      readonly questionText: CodecTypes['pg/text@1']['output'];
+      readonly orderIndex: CodecTypes['pg/int4@1']['output'];
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    };
   };
 };
 export type FieldInputTypes = {
@@ -261,6 +269,14 @@ export type FieldInputTypes = {
       readonly difficulty: 'EASY' | 'MEDIUM' | 'HARD';
       readonly focusArea: CodecTypes['pg/text@1']['input'];
       readonly questionCount: CodecTypes['pg/int4@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+    };
+    readonly Question: {
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly interviewId: CodecTypes['pg/uuid@1']['input'];
+      readonly questionText: CodecTypes['pg/text@1']['input'];
+      readonly orderIndex: CodecTypes['pg/int4@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
     };
@@ -277,6 +293,14 @@ export type StorageColumnTypes = {
       readonly type: 'TECHNICAL' | 'BEHAVIORAL' | 'HR';
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     };
+    readonly question: {
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly interviewId: CodecTypes['pg/uuid@1']['output'];
+      readonly orderIndex: CodecTypes['pg/int4@1']['output'];
+      readonly questionText: CodecTypes['pg/text@1']['output'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    };
   };
 };
 export type StorageColumnInputTypes = {
@@ -290,8 +314,48 @@ export type StorageColumnInputTypes = {
       readonly type: 'TECHNICAL' | 'BEHAVIORAL' | 'HR';
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
     };
+    readonly question: {
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly interviewId: CodecTypes['pg/uuid@1']['input'];
+      readonly orderIndex: CodecTypes['pg/int4@1']['input'];
+      readonly questionText: CodecTypes['pg/text@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+    };
   };
 };
+
+export namespace Models {
+  export type public_Interview = {
+    id: CodecTypes['pg/uuid@1']['output'];
+    type: 'TECHNICAL' | 'BEHAVIORAL' | 'HR';
+    difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+    focusArea: CodecTypes['pg/text@1']['output'];
+    questionCount: CodecTypes['pg/int4@1']['output'];
+    createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    questions: public_Question[];
+    readonly [RelationKeys]?: 'questions';
+  };
+  export type public_Question = {
+    id: CodecTypes['pg/uuid@1']['output'];
+    interviewId: CodecTypes['pg/uuid@1']['output'];
+    questionText: CodecTypes['pg/text@1']['output'];
+    orderIndex: CodecTypes['pg/int4@1']['output'];
+    createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    interview: public_Interview;
+    readonly [RelationKeys]?: 'interview';
+  };
+}
+
+export declare const models: {
+  public: {
+    Interview: Models.public_Interview;
+    Question: Models.public_Question;
+  };
+};
+
 export type TypeMaps = TypeMapsType<
   CodecTypes,
   QueryOperationTypes,
@@ -354,6 +418,65 @@ type ContractBase = Omit<
               indexes: readonly [];
               foreignKeys: readonly [];
             };
+            readonly question: {
+              columns: {
+                readonly id: {
+                  readonly nativeType: 'uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                };
+                readonly interviewId: {
+                  readonly nativeType: 'uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                };
+                readonly questionText: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly orderIndex: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                };
+                readonly createdAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                };
+                readonly updatedAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'question_interviewId_idx_766b64f2';
+                  readonly prefix: 'question_interviewId_idx';
+                  readonly columns: readonly ['interviewId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'question';
+                    readonly columns: readonly ['interviewId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'interview';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
           };
           readonly valueSet: {
             readonly InterviewDifficulty: {
@@ -376,6 +499,7 @@ type ContractBase = Omit<
   readonly targetFamily: 'sql';
   readonly roots: {
     readonly interview: { readonly namespace: 'public' & NamespaceId; readonly model: 'Interview' };
+    readonly question: { readonly namespace: 'public' & NamespaceId; readonly model: 'Question' };
   };
   readonly domain: {
     readonly namespaces: {
@@ -418,7 +542,19 @@ type ContractBase = Omit<
                 };
               };
             };
-            readonly relations: Record<string, never>;
+            readonly relations: {
+              readonly questions: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Question';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['interviewId'];
+                };
+              };
+            };
             readonly storage: {
               readonly table: 'interview';
               readonly namespaceId: 'public';
@@ -428,6 +564,66 @@ type ContractBase = Omit<
                 readonly difficulty: { readonly column: 'difficulty' };
                 readonly focusArea: { readonly column: 'focusArea' };
                 readonly questionCount: { readonly column: 'questionCount' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+              };
+            };
+          };
+          readonly Question: {
+            readonly fields: {
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly interviewId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly questionText: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly orderIndex: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly interview: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Interview';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['interviewId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'question';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly id: { readonly column: 'id' };
+                readonly interviewId: { readonly column: 'interviewId' };
+                readonly questionText: { readonly column: 'questionText' };
+                readonly orderIndex: { readonly column: 'orderIndex' };
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
               };
@@ -490,6 +686,23 @@ type ContractBase = Omit<
           readonly ref: {
             readonly namespace: 'public';
             readonly table: 'interview';
+            readonly column: 'updatedAt';
+          };
+          readonly onCreate: { readonly kind: 'generator'; readonly id: 'instantNow' };
+          readonly onUpdate: { readonly kind: 'generator'; readonly id: 'instantNow' };
+        },
+        {
+          readonly ref: {
+            readonly namespace: 'public';
+            readonly table: 'question';
+            readonly column: 'id';
+          };
+          readonly onCreate: { readonly kind: 'generator'; readonly id: 'uuidv4' };
+        },
+        {
+          readonly ref: {
+            readonly namespace: 'public';
+            readonly table: 'question';
             readonly column: 'updatedAt';
           };
           readonly onCreate: { readonly kind: 'generator'; readonly id: 'instantNow' };

@@ -20,4 +20,15 @@ model Interview {
   questionCount Int
   createdAt     DateTime            @default(now())
   updatedAt     temporal.updatedAt()
+  questions     Question[]
+}
+
+model Question {
+  id           Uuid      @id @default(uuid())
+  interviewId  Uuid
+  interview    Interview @relation(fields: [interviewId], references: [id])
+  questionText String
+  orderIndex   Int
+  createdAt    DateTime  @default(now())
+  updatedAt    temporal.updatedAt()
 }
