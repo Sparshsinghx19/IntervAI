@@ -38,7 +38,7 @@ export function InterviewSetup() {
 
   const isValid = interviewType && difficulty && focusArea && questionCount;
 
-  const handleStart = () => {
+  const handleStart = async () => {
     if (!isValid) {
       setError('Please select all options before continuing.');
       return;
@@ -46,18 +46,34 @@ export function InterviewSetup() {
     setError('');
     setIsPreparing(true);
     
-    // Store configuration in sessionStorage
-    sessionStorage.setItem('intervai-interview-config', JSON.stringify({
-      interviewType,
-      difficulty,
-      focusArea,
-      questionCount
-    }));
+    try {
+      const res = await fetch('http://localhost:4000/api/interviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: interviewType,
+          difficulty,
+          focusArea,
+          questionCount: parseInt(questionCount, 10),
+        })
+      });
 
-    // Simulate brief preparation before navigation
-    setTimeout(() => {
-      router.push('/interview/session');
-    }, 1500);
+      if (!res.ok) {
+        throw new Error('Failed to create interview session');
+      }
+
+      const data = await res.json();
+
+      // Simulate brief preparation before navigation
+      setTimeout(() => {
+        router.push(`/interview/session?id=${data.id}`);
+      }, 1500);
+
+    } catch (err) {
+      console.error(err);
+      setError('Could not connect to the backend server to create the session.');
+      setIsPreparing(false);
+    }
   };
 
   return (

@@ -1,25 +1,27 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, SkipForward, AlertCircle, RefreshCcw, Send, BrainCircuit, CheckCircle2 } from 'lucide-react';
 
 import { Navbar } from '@/components/marketing/navbar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { getMockQuestions, MockQuestion, SessionConfig } from '@/data/mock-interview';
 import { Textarea } from '@/components/ui/textarea';
 
 type AIStatus = 'LISTENING' | 'EVALUATING' | 'COMPLETED';
 
-export default function InterviewSession() {
+function InterviewSessionContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const id = searchParams.get('id');
 
   // Config State
-  const [config, setConfig] = useState<SessionConfig | null>(null);
-  const [questions, setQuestions] = useState<MockQuestion[]>([]);
-  const [isConfigLoaded, setIsConfigLoaded] = useState(false);
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [error, setError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Session State
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -31,28 +33,40 @@ export default function InterviewSession() {
   const [aiStatus, setAiStatus] = useState<AIStatus>('LISTENING');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 1. Load config on mount
+  // 1. Load questions on mount
   useEffect(() => {
-    try {
-      const stored = sessionStorage.getItem('intervai-interview-config');
-      if (stored) {
-        const parsed = JSON.parse(stored) as SessionConfig;
-        if (parsed.interviewType && parsed.difficulty && parsed.focusArea && parsed.questionCount) {
-          setConfig(parsed);
-          setQuestions(getMockQuestions(parsed));
-        }
-      }
-    } catch (e) {
-      console.error('Failed to parse config from sessionStorage');
-    } finally {
-      setIsConfigLoaded(true);
+    if (!id) {
+      setError(true);
+      setErrorMessage('No interview ID provided in URL.');
+      setIsLoaded(true);
+      return;
     }
-  }, []);
+
+    const loadQuestions = async () => {
+      try {
+        const res = await fetch(`http://localhost:4000/api/interviews/${id}/questions`);
+        if (!res.ok) {
+          setError(true);
+          setErrorMessage(res.status === 404 ? 'Interview not found.' : 'Failed to load questions.');
+          setIsLoaded(true);
+          return;
+        }
+        const data = await res.json();
+        setQuestions(data.questions);
+      } catch (err) {
+        setError(true);
+        setErrorMessage('Could not connect to the server.');
+      } finally {
+        setIsLoaded(true);
+      }
+    };
+    loadQuestions();
+  }, [id]);
 
   // 2. Timer
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (isConfigLoaded && config && aiStatus !== 'COMPLETED') {
+    if (isLoaded && !error && aiStatus !== 'COMPLETED') {
       interval = setInterval(() => {
         setTimerSeconds((prev) => prev + 1);
       }, 1000);
@@ -60,7 +74,7 @@ export default function InterviewSession() {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isConfigLoaded, config, aiStatus]);
+  }, [isLoaded, error, aiStatus]);
 
   const formatTime = (totalSeconds: number) => {
     const mins = Math.floor(totalSeconds / 60);
@@ -69,7 +83,7 @@ export default function InterviewSession() {
   };
 
   // If loading
-  if (!isConfigLoaded) {
+  if (!isLoaded) {
     return (
       <div className="min-h-screen bg-obsidian text-foreground flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"></div>
@@ -77,8 +91,8 @@ export default function InterviewSession() {
     );
   }
 
-  // If missing/invalid config
-  if (!config) {
+  // If missing/invalid config or questions
+  if (error || questions.length === 0) {
     return (
       <div className="min-h-screen bg-obsidian text-foreground flex flex-col items-center justify-center p-4">
         <Navbar mode="session" />
@@ -88,7 +102,7 @@ export default function InterviewSession() {
           </div>
           <h2 className="text-2xl font-bold text-white">Session Not Found</h2>
           <p className="text-slate-400">
-            We couldn't find your interview configuration. Please return to the setup page and try again.
+            {errorMessage || 'No questions available for this interview.'}
           </p>
           <Button 
             variant="glow" 
@@ -255,21 +269,14 @@ export default function InterviewSession() {
               >
                 {/* Question */}
                 <Card className="glass-card-strong p-8 border-white/10 flex-1 flex flex-col">
-                  {questions.length < parseInt(config.questionCount, 10) && currentIndex === 0 && (
-                    <div className="mb-6 p-4 rounded-lg bg-cyan-900/20 border border-cyan-500/20 flex items-start gap-3">
-                      <AlertCircle className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
-                      <p className="text-sm text-cyan-200">
-                        We couldn't find enough questions matching your exact criteria. We've provided the closest available questions within your focus area.
-                      </p>
-                    </div>
-                  )}
+                  {/* Removed mock question count warning since we enforce real DB counts now */}
 
                   <div className="inline-flex items-center px-3 py-1 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-300 text-xs font-medium uppercase tracking-wider mb-6 self-start">
                     Question {currentIndex + 1}
                   </div>
                   
                   <h2 className="text-2xl md:text-3xl font-semibold text-white leading-tight mb-8">
-                    {currentQuestion?.question}
+                    {currentQuestion?.questionText}
                   </h2>
                   
                   <div className="mt-auto space-y-4">
@@ -337,5 +344,17 @@ export default function InterviewSession() {
 
       </div>
     </div>
+  );
+}
+
+export default function InterviewSession() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-obsidian text-foreground flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"></div>
+      </div>
+    }>
+      <InterviewSessionContent />
+    </Suspense>
   );
 }
