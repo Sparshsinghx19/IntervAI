@@ -12,12 +12,19 @@ enum InterviewDifficulty {
   HARD
 }
 
+enum InterviewStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
 model Interview {
   id            Uuid                @id @default(uuid())
   type          InterviewType
   difficulty    InterviewDifficulty
   focusArea     String
   questionCount Int
+  status        InterviewStatus     @default(NOT_STARTED)
   createdAt     DateTime            @default(now())
   updatedAt     temporal.updatedAt()
   questions     Question[]
@@ -31,4 +38,13 @@ model Question {
   orderIndex   Int
   createdAt    DateTime  @default(now())
   updatedAt    temporal.updatedAt()
+  answer       Answer?
+}
+
+model Answer {
+  id           Uuid      @id @default(uuid())
+  questionId   Uuid      @unique
+  question     Question  @relation(fields: [questionId], references: [id])
+  answerText   String
+  submittedAt  DateTime  @default(now())
 }

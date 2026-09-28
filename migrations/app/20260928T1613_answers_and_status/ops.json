@@ -1,0 +1,209 @@
+[
+  {
+    "id": "table.answer",
+    "label": "Create table \"answer\"",
+    "summary": "Creates table \"answer\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "answer"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"answer\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"answer\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"answer\"",
+        "sql": "CREATE TABLE \"public\".\"answer\" (\n  \"answerText\" text NOT NULL,\n  \"id\" uuid NOT NULL,\n  \"questionId\" uuid NOT NULL,\n  \"submittedAt\" timestamptz DEFAULT (now()) NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"answer\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"answer\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.interview.status",
+    "label": "Add column \"status\" to \"interview\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "status",
+        "table": "interview"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"status\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "interview",
+          "status"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"status\"",
+        "sql": "ALTER TABLE \"public\".\"interview\" ADD COLUMN \"status\" text DEFAULT 'NOT_STARTED' NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"status\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "interview",
+          "status"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.answer.answer_questionId_key",
+    "label": "Add unique constraint on \"answer\" (questionId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "answer_questionId_key",
+        "table": "answer"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"answer_questionId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "answer_questionId_key",
+          "public",
+          "\"public\".\"answer\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"answer_questionId_key\"",
+        "sql": "ALTER TABLE \"public\".\"answer\" ADD CONSTRAINT \"answer_questionId_key\" UNIQUE (\"questionId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"answer_questionId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "answer_questionId_key",
+          "public",
+          "\"public\".\"answer\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.interview.interview_status_check_f11a989d",
+    "label": "Add check constraint \"interview_status_check_f11a989d\" on \"interview\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "interview_status_check_f11a989d",
+        "table": "interview"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"interview_status_check_f11a989d\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "interview_status_check_f11a989d",
+          "public",
+          "\"public\".\"interview\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"interview_status_check_f11a989d\"",
+        "sql": "ALTER TABLE \"public\".\"interview\" ADD CONSTRAINT \"interview_status_check_f11a989d\" CHECK (\"status\" IN ('NOT_STARTED', 'IN_PROGRESS', 'COMPLETED'))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"interview_status_check_f11a989d\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "interview_status_check_f11a989d",
+          "public",
+          "\"public\".\"interview\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.answer.answer_questionId_fkey",
+    "label": "Add foreign key \"answer_questionId_fkey\" on \"answer\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "answer_questionId_fkey",
+        "table": "answer"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"answer_questionId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "answer_questionId_fkey",
+          "public",
+          "\"public\".\"answer\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"answer_questionId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"answer\"\nADD CONSTRAINT \"answer_questionId_fkey\"\nFOREIGN KEY (\"questionId\")\nREFERENCES \"public\".\"question\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"answer_questionId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "answer_questionId_fkey",
+          "public",
+          "\"public\".\"answer\""
+        ]
+      }
+    ]
+  }
+]

@@ -4,6 +4,10 @@
   "target": "postgres",
   "profileHash": "3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2",
   "roots": {
+    "answer": {
+      "model": "Answer",
+      "namespace": "public"
+    },
     "interview": {
       "model": "Interview",
       "namespace": "public"
@@ -34,6 +38,23 @@
               }
             ]
           },
+          "InterviewStatus": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "NOT_STARTED",
+                "value": "NOT_STARTED"
+              },
+              {
+                "name": "IN_PROGRESS",
+                "value": "IN_PROGRESS"
+              },
+              {
+                "name": "COMPLETED",
+                "value": "COMPLETED"
+              }
+            ]
+          },
           "InterviewType": {
             "codecId": "pg/text@1",
             "members": [
@@ -53,6 +74,74 @@
           }
         },
         "models": {
+          "Answer": {
+            "fields": {
+              "answerText": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "questionId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "submittedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "question": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "questionId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Question",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "answerText": {
+                  "column": "answerText"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "questionId": {
+                  "column": "questionId"
+                },
+                "submittedAt": {
+                  "column": "submittedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "answer"
+            }
+          },
           "Interview": {
             "fields": {
               "createdAt": {
@@ -94,6 +183,19 @@
                 "type": {
                   "codecId": "pg/int4@1",
                   "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "InterviewStatus",
+                  "namespaceId": "public",
+                  "plane": "domain"
                 }
               },
               "type": {
@@ -150,6 +252,9 @@
                 },
                 "questionCount": {
                   "column": "questionCount"
+                },
+                "status": {
+                  "column": "status"
                 },
                 "type": {
                   "column": "type"
@@ -208,6 +313,22 @@
               }
             },
             "relations": {
+              "answer": {
+                "cardinality": "1:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "questionId"
+                  ]
+                },
+                "to": {
+                  "model": "Answer",
+                  "namespace": "public"
+                }
+              },
               "interview": {
                 "cardinality": "N:1",
                 "nullable": false,
@@ -259,12 +380,76 @@
       "public": {
         "entries": {
           "table": {
+            "answer": {
+              "columns": {
+                "answerText": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "questionId": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "submittedAt": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "source": {
+                    "columns": [
+                      "questionId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "answer"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "question"
+                  }
+                }
+              ],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "questionId"
+                  ]
+                }
+              ]
+            },
             "interview": {
               "checks": [
                 {
                   "expression": "\"difficulty\" IN ('EASY', 'MEDIUM', 'HARD')",
                   "name": "interview_difficulty_check_244bf003",
                   "prefix": "interview_difficulty_check"
+                },
+                {
+                  "expression": "\"status\" IN ('NOT_STARTED', 'IN_PROGRESS', 'COMPLETED')",
+                  "name": "interview_status_check_f11a989d",
+                  "prefix": "interview_status_check"
                 },
                 {
                   "expression": "\"type\" IN ('TECHNICAL', 'BEHAVIORAL', 'HR')",
@@ -307,6 +492,21 @@
                   "codecId": "pg/int4@1",
                   "nativeType": "int4",
                   "nullable": false
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": "NOT_STARTED"
+                  },
+                  "nativeType": "text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "InterviewStatus",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
                 },
                 "type": {
                   "codecId": "pg/text@1",
@@ -416,6 +616,14 @@
                 "HARD"
               ]
             },
+            "InterviewStatus": {
+              "kind": "valueSet",
+              "values": [
+                "NOT_STARTED",
+                "IN_PROGRESS",
+                "COMPLETED"
+              ]
+            },
             "InterviewType": {
               "kind": "valueSet",
               "values": [
@@ -430,12 +638,23 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "124c6a2ac76130f48f42717c9ba93ae7a09cf2b5b8155dff8fecff56f2f44386"
+    "storageHash": "b15275781c2bf3a51026c1a148939dc49b45415272330d506786040827466acd"
   },
   "execution": {
-    "executionHash": "fa3743a3690ef5e9448a426d6d1248fc005e28bf67fa93129d619e6869dd30b1",
+    "executionHash": "14c6626a66099b3ea415aa84d357963ffd9f35d9093378f597c8b0d0d378095e",
     "mutations": {
       "defaults": [
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "id",
+            "namespace": "public",
+            "table": "answer"
+          }
+        },
         {
           "onCreate": {
             "id": "uuidv4",

@@ -118,5 +118,65 @@ export const interviewController = {
       console.error('Failed to get interview questions:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
+  },
+
+  startInterview: async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+
+      if (!id || typeof id !== 'string') {
+        return res.status(400).json({ error: 'Interview ID is required and must be a string' });
+      }
+
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(id)) {
+        return res.status(400).json({ error: 'Invalid Interview ID format' });
+      }
+
+      const interview = await interviewService.startInterview(id);
+      res.status(200).json(interview);
+    } catch (error: any) {
+      console.error('Failed to start interview:', error);
+      if (error.message === 'Interview not found') {
+        return res.status(404).json({ error: error.message });
+      }
+      if (error.message === 'Interview cannot be started from this state') {
+        return res.status(409).json({ error: error.message });
+      }
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  },
+
+  submitAnswer: async (req: Request, res: Response) => {
+    try {
+      const { interviewId, questionId } = req.params;
+      const { answerText } = req.body;
+
+      if (!interviewId || !questionId) {
+        return res.status(400).json({ error: 'Interview ID and Question ID are required' });
+      }
+      
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(interviewId as string) || !uuidRegex.test(questionId as string)) {
+        return res.status(400).json({ error: 'Invalid UUID format' });
+      }
+
+      if (!answerText || typeof answerText !== 'string' || answerText.trim() === '') {
+        return res.status(400).json({ error: 'answerText is required and must be a non-empty string' });
+      }
+
+      const answer = await interviewService.submitAnswer(interviewId as string, questionId as string, answerText);
+      
+      res.status(201).json(answer);
+    } catch (error: any) {
+      console.error('Failed to submit answer:', error);
+      if (error.code === 'NOT_FOUND') {
+        return res.status(404).json({ error: error.message });
+      }
+      if (error.code === 'CONFLICT') {
+        return res.status(409).json({ error: error.message });
+      }
+      res.status(500).json({ error: 'Internal server error' });
+    }
   }
 };
