@@ -1,5 +1,7 @@
 import { db } from '../../prisma/db.js';
 import { questionGenerationService } from './question-generation.service.js';
+import { retrieveQuestions } from '../ai/question-retrieval.service.js';
+import { Topic } from '../ai/question-bank.js';
 
 interface CreateInterviewData {
   type: 'TECHNICAL' | 'BEHAVIORAL' | 'HR';
@@ -10,6 +12,40 @@ interface CreateInterviewData {
 
 export const interviewService = {
   createInterview: async (data: CreateInterviewData) => {
+    let retrievedQuestionsText: string[] | null = null;
+
+    if (data.type === 'TECHNICAL') {
+      const topicMap: Record<string, Topic> = {
+        'dsa': 'DSA',
+        'os': 'OS',
+        'dbms': 'DBMS',
+        'cn': 'CN',
+        'oop': 'OOP',
+        'system design': 'System Design'
+      };
+      
+      const mappedTopic = topicMap[data.focusArea.toLowerCase()];
+      
+      if (mappedTopic) {
+        try {
+          const results = await retrieveQuestions({
+            query: `Interview questions about ${data.focusArea}`,
+            topic: mappedTopic,
+            difficulty: data.difficulty,
+            limit: data.questionCount
+          });
+          
+          if (results && results.length === data.questionCount) {
+            retrievedQuestionsText = results.map(r => r.questionText);
+          } else {
+            console.warn(`[Retrieval Warning] Requested ${data.questionCount} questions for ${mappedTopic}, but got ${results?.length || 0}. Falling back to generator.`);
+          }
+        } catch (error: any) {
+          console.warn(`[Retrieval Warning] Semantic retrieval failed: ${error.message || 'Unknown error'}. Falling back to generator.`);
+        }
+      }
+    }
+
     return await db.transaction(async (tx) => {
       // Construct the Prisma 8 INSERT plan for the interview
       const plan = tx.sql.public.interview
@@ -20,13 +56,23 @@ export const interviewService = {
       const [interview] = await tx.query(plan);
 
       if (interview) {
-        // Generate questions
-        const questionsData = questionGenerationService.generateQuestions(
-          data.focusArea,
-          data.difficulty,
-          data.questionCount,
-          interview.id
-        );
+        let questionsData;
+        
+        if (retrievedQuestionsText) {
+          questionsData = retrievedQuestionsText.map((text, i) => ({
+            interviewId: interview.id,
+            questionText: text,
+            orderIndex: i + 1
+          }));
+        } else {
+          // Generate questions fallback
+          questionsData = questionGenerationService.generateQuestions(
+            data.focusArea,
+            data.difficulty,
+            data.questionCount,
+            interview.id
+          );
+        }
 
         // Insert questions using the ORM to let it handle client-side UUIDs and temporal values
         for (const q of questionsData) {
