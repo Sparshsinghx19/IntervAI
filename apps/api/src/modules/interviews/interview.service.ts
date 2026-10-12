@@ -20,8 +20,10 @@ export const interviewService = {
         'os': 'OS',
         'dbms': 'DBMS',
         'cn': 'CN',
+        'networks': 'CN',
         'oop': 'OOP',
-        'system design': 'System Design'
+        'system design': 'System Design',
+        'system-design': 'System Design'
       };
       
       const mappedTopic = topicMap[data.focusArea.toLowerCase()];

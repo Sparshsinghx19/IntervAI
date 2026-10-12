@@ -59,8 +59,14 @@ export const interviewController = {
       
       // Return appropriate JSON response
       res.status(201).json(newInterview);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create interview:', error);
+      if (
+        error?.code === 'ECONNREFUSED' ||
+        (Array.isArray(error?.errors) && error.errors.some((e: any) => e?.code === 'ECONNREFUSED'))
+      ) {
+        return res.status(503).json({ error: 'Database service is currently unavailable. Please ensure database is running.' });
+      }
       res.status(500).json({ error: 'Internal server error' });
     }
   },
