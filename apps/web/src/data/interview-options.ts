@@ -26,7 +26,7 @@ export const focusAreas: Option[] = [
 ];
 
 export const questionCounts: Option[] = [
-  { id: '5', label: '5 Questions' },
-  { id: '10', label: '10 Questions' },
-  { id: '15', label: '15 Questions' },
+  { id: '5', label: '5 Questions', description: '~10-15 minutes' },
+  { id: '10', label: '10 Questions', description: '~20-25 minutes' },
+  { id: '15', label: '15 Questions', description: '~35-45 minutes' },
 ];
