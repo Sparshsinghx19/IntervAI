@@ -137,4 +137,20 @@ describe('Interview Service - Retrieval Integration', () => {
     assert.strictEqual(embedMock.mock.callCount(), 1);
     assert.strictEqual(warningLogged, true);
   });
+
+  it('getInterviewQuestions returns question type and defaults missing type to THEORY', async () => {
+    mock.method(db, 'runtime', () => ({
+      query: async () => [
+        { id: 'q-1', questionText: 'What is the difference between a router and a switch?', orderIndex: 1, type: 'THEORY' },
+        { id: 'q-2', questionText: 'Reverse a singly linked list', orderIndex: 2, type: 'CODING' },
+        { id: 'q-3', questionText: 'Legacy question without explicit type', orderIndex: 3, type: null }
+      ]
+    }));
+
+    const result = await interviewService.getInterviewQuestions('mock-interview-id');
+    assert.strictEqual(result.length, 3);
+    assert.strictEqual(result[0].type, 'THEORY');
+    assert.strictEqual(result[1].type, 'CODING');
+    assert.strictEqual(result[2].type, 'THEORY'); // safely defaulted to THEORY
+  });
 });

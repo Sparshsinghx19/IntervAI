@@ -17,11 +17,23 @@ export const questionGenerationService = {
     const matchKey = Object.keys(banks).find(k => k.toLowerCase() === focusArea.toLowerCase());
     const baseQuestions = matchKey ? banks[matchKey] : defaultBank;
     
+    // Determine question type based on topic
+    let questionType: 'THEORY' | 'CODING' | 'SYSTEM_DESIGN' = 'THEORY';
+    const lowerArea = focusArea.toLowerCase();
+    if (lowerArea === 'system design' || lowerArea === 'system-design') {
+      questionType = 'SYSTEM_DESIGN';
+    } else if (lowerArea === 'dsa') {
+      questionType = 'CODING';
+    } else {
+      questionType = 'THEORY';
+    }
+
     for (let i = 0; i < count; i++) {
       questions.push({
         interviewId,
         questionText: `${baseQuestions[i % baseQuestions.length!]} (Difficulty: ${difficulty})`,
         orderIndex: i + 1,
+        type: questionType,
       });
     }
     return questions;

@@ -1,0 +1,86 @@
+[
+  {
+    "id": "column.public.question.type",
+    "label": "Add column \"type\" to \"question\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "type",
+        "table": "question"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"type\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "question",
+          "type"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"type\"",
+        "sql": "ALTER TABLE \"public\".\"question\" ADD COLUMN \"type\" text DEFAULT 'THEORY' NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"type\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "question",
+          "type"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.question.question_type_check_9ee3e86d",
+    "label": "Add check constraint \"question_type_check_9ee3e86d\" on \"question\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "question_type_check_9ee3e86d",
+        "table": "question"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"question_type_check_9ee3e86d\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "question_type_check_9ee3e86d",
+          "public",
+          "\"public\".\"question\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"question_type_check_9ee3e86d\"",
+        "sql": "ALTER TABLE \"public\".\"question\" ADD CONSTRAINT \"question_type_check_9ee3e86d\" CHECK (\"type\" IN ('THEORY', 'CODING', 'SYSTEM_DESIGN'))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"question_type_check_9ee3e86d\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "question_type_check_9ee3e86d",
+          "public",
+          "\"public\".\"question\""
+        ]
+      }
+    ]
+  }
+]

@@ -31,13 +31,20 @@ model Interview {
   evaluationReport EvaluationReport?
 }
 
+enum QuestionType {
+  THEORY
+  CODING
+  SYSTEM_DESIGN
+}
+
 model Question {
-  id           Uuid      @id @default(uuid())
+  id           Uuid         @id @default(uuid())
   interviewId  Uuid
-  interview    Interview @relation(fields: [interviewId], references: [id])
+  interview    Interview    @relation(fields: [interviewId], references: [id])
   questionText String
   orderIndex   Int
-  createdAt    DateTime  @default(now())
+  type         QuestionType @default(THEORY)
+  createdAt    DateTime     @default(now())
   updatedAt    temporal.updatedAt()
   answer       Answer?
 }

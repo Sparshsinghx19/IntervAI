@@ -34,7 +34,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'9fafa391d7d4b780381b94510a4cdec951c32ef31d23195618f343d207c055c1'>;
+  StorageHashBase<'08cb7a5b092eb7e8b2776a2ff29671bc5037a32ba2a07b4b8b0cb363c9f929b8'>;
 export type ExecutionHash =
   ExecutionHashBase<'685caf5cd36fd558e5b5ec51869330d9c0cb86ef11ad72c915c7bcd3ab53dbbc'>;
 export type ProfileHash =
@@ -292,6 +292,7 @@ export type FieldOutputTypes = {
       readonly interviewId: CodecTypes['pg/uuid@1']['output'];
       readonly questionText: CodecTypes['pg/text@1']['output'];
       readonly orderIndex: CodecTypes['pg/int4@1']['output'];
+      readonly type: 'THEORY' | 'CODING' | 'SYSTEM_DESIGN';
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     };
@@ -349,6 +350,7 @@ export type FieldInputTypes = {
       readonly interviewId: CodecTypes['pg/uuid@1']['input'];
       readonly questionText: CodecTypes['pg/text@1']['input'];
       readonly orderIndex: CodecTypes['pg/int4@1']['input'];
+      readonly type: 'THEORY' | 'CODING' | 'SYSTEM_DESIGN';
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
     };
@@ -407,6 +409,7 @@ export type StorageColumnTypes = {
       readonly interviewId: CodecTypes['pg/uuid@1']['output'];
       readonly orderIndex: CodecTypes['pg/int4@1']['output'];
       readonly questionText: CodecTypes['pg/text@1']['output'];
+      readonly type: 'THEORY' | 'CODING' | 'SYSTEM_DESIGN';
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     };
   };
@@ -464,6 +467,7 @@ export type StorageColumnInputTypes = {
       readonly interviewId: CodecTypes['pg/uuid@1']['input'];
       readonly orderIndex: CodecTypes['pg/int4@1']['input'];
       readonly questionText: CodecTypes['pg/text@1']['input'];
+      readonly type: 'THEORY' | 'CODING' | 'SYSTEM_DESIGN';
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
     };
   };
@@ -488,6 +492,7 @@ export namespace Models {
     interviewId: CodecTypes['pg/uuid@1']['output'];
     questionText: CodecTypes['pg/text@1']['output'];
     orderIndex: CodecTypes['pg/int4@1']['output'];
+    type: 'THEORY' | 'CODING' | 'SYSTEM_DESIGN';
     createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     answer: public_Answer | null;
@@ -860,6 +865,15 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/int4@1';
                   readonly nullable: false;
                 };
+                readonly type: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'THEORY'>;
+                  };
+                };
                 readonly createdAt: {
                   readonly nativeType: 'timestamptz';
                   readonly codecId: 'pg/timestamptz-temporal@1';
@@ -914,6 +928,10 @@ type ContractBase = Omit<
             readonly InterviewType: {
               readonly kind: 'valueSet';
               readonly values: readonly ['TECHNICAL', 'BEHAVIORAL', 'HR'];
+            };
+            readonly QuestionType: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['THEORY', 'CODING', 'SYSTEM_DESIGN'];
             };
           };
         };
@@ -1285,6 +1303,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
               };
+              readonly type: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly createdAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -1334,6 +1356,7 @@ type ContractBase = Omit<
                 readonly interviewId: { readonly column: 'interviewId' };
                 readonly questionText: { readonly column: 'questionText' };
                 readonly orderIndex: { readonly column: 'orderIndex' };
+                readonly type: { readonly column: 'type' };
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
               };
@@ -1363,6 +1386,14 @@ type ContractBase = Omit<
               { readonly name: 'NOT_STARTED'; readonly value: 'NOT_STARTED' },
               { readonly name: 'IN_PROGRESS'; readonly value: 'IN_PROGRESS' },
               { readonly name: 'COMPLETED'; readonly value: 'COMPLETED' },
+            ];
+          };
+          readonly QuestionType: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'THEORY'; readonly value: 'THEORY' },
+              { readonly name: 'CODING'; readonly value: 'CODING' },
+              { readonly name: 'SYSTEM_DESIGN'; readonly value: 'SYSTEM_DESIGN' },
             ];
           };
           readonly EvaluationStatus: {

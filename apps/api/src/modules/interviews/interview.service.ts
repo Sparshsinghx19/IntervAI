@@ -1,7 +1,7 @@
 import { db } from '../../prisma/db.js';
 import { questionGenerationService } from './question-generation.service.js';
 import { retrieveQuestions } from '../ai/question-retrieval.service.js';
-import { Topic } from '../ai/question-bank.js';
+import { questionBank, Topic } from '../ai/question-bank.js';
 
 interface CreateInterviewData {
   type: 'TECHNICAL' | 'BEHAVIORAL' | 'HR';
@@ -61,11 +61,15 @@ export const interviewService = {
         let questionsData;
         
         if (retrievedQuestionsText) {
-          questionsData = retrievedQuestionsText.map((text, i) => ({
-            interviewId: interview.id,
-            questionText: text,
-            orderIndex: i + 1
-          }));
+          questionsData = retrievedQuestionsText.map((text, i) => {
+            const entry = questionBank.find(qb => qb.questionText === text);
+            return {
+              interviewId: interview.id,
+              questionText: text,
+              orderIndex: i + 1,
+              type: entry?.type || (data.focusArea.toLowerCase() === 'system design' || data.focusArea.toLowerCase() === 'system-design' ? 'SYSTEM_DESIGN' : data.focusArea.toLowerCase() === 'dsa' ? 'CODING' : 'THEORY')
+            };
+          });
         } else {
           // Generate questions fallback
           questionsData = questionGenerationService.generateQuestions(
@@ -100,13 +104,16 @@ export const interviewService = {
 
   getInterviewQuestions: async (interviewId: string) => {
     const plan = db.sql.public.question
-      .select('id', 'questionText', 'orderIndex')
+      .select('id', 'questionText', 'orderIndex', 'type')
       .where((f, fns) => fns.eq(f.interviewId, interviewId))
       .orderBy((f) => f.orderIndex, { direction: 'asc' })
       .build();
 
     const questions = await db.runtime().query(plan);
-    return questions;
+    return questions.map((q: any) => ({
+      ...q,
+      type: q.type || 'THEORY'
+    }));
   },
 
   startInterview: async (id: string) => {
