@@ -34,9 +34,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'b15275781c2bf3a51026c1a148939dc49b45415272330d506786040827466acd'>;
+  StorageHashBase<'9fafa391d7d4b780381b94510a4cdec951c32ef31d23195618f343d207c055c1'>;
 export type ExecutionHash =
-  ExecutionHashBase<'14c6626a66099b3ea415aa84d357963ffd9f35d9093378f597c8b0d0d378095e'>;
+  ExecutionHashBase<'685caf5cd36fd558e5b5ec51869330d9c0cb86ef11ad72c915c7bcd3ab53dbbc'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -248,6 +248,35 @@ export type FieldOutputTypes = {
       readonly answerText: CodecTypes['pg/text@1']['output'];
       readonly submittedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     };
+    readonly Evaluation: {
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly answerId: CodecTypes['pg/uuid@1']['output'];
+      readonly status: 'PENDING' | 'COMPLETED' | 'FAILED';
+      readonly correctnessScore: CodecTypes['pg/int4@1']['output'] | null;
+      readonly completenessScore: CodecTypes['pg/int4@1']['output'] | null;
+      readonly reasoningScore: CodecTypes['pg/int4@1']['output'] | null;
+      readonly clarityScore: CodecTypes['pg/int4@1']['output'] | null;
+      readonly overallScore: CodecTypes['pg/int4@1']['output'] | null;
+      readonly summary: CodecTypes['pg/text@1']['output'] | null;
+      readonly strengths: CodecTypes['pg/json@1']['output'] | null;
+      readonly improvements: CodecTypes['pg/json@1']['output'] | null;
+      readonly sampleAnswer: CodecTypes['pg/text@1']['output'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    };
+    readonly EvaluationReport: {
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly interviewId: CodecTypes['pg/uuid@1']['output'];
+      readonly status: 'PENDING' | 'COMPLETED' | 'FAILED';
+      readonly overallScore: CodecTypes['pg/int4@1']['output'] | null;
+      readonly performanceLevel: CodecTypes['pg/text@1']['output'] | null;
+      readonly summary: CodecTypes['pg/text@1']['output'] | null;
+      readonly questionsEvaluated: CodecTypes['pg/int4@1']['output'] | null;
+      readonly reportPayload: CodecTypes['pg/json@1']['output'] | null;
+      readonly errorMessage: CodecTypes['pg/text@1']['output'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    };
     readonly Interview: {
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly type: 'TECHNICAL' | 'BEHAVIORAL' | 'HR';
@@ -275,6 +304,35 @@ export type FieldInputTypes = {
       readonly questionId: CodecTypes['pg/uuid@1']['input'];
       readonly answerText: CodecTypes['pg/text@1']['input'];
       readonly submittedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+    };
+    readonly Evaluation: {
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly answerId: CodecTypes['pg/uuid@1']['input'];
+      readonly status: 'PENDING' | 'COMPLETED' | 'FAILED';
+      readonly correctnessScore: CodecTypes['pg/int4@1']['input'] | null;
+      readonly completenessScore: CodecTypes['pg/int4@1']['input'] | null;
+      readonly reasoningScore: CodecTypes['pg/int4@1']['input'] | null;
+      readonly clarityScore: CodecTypes['pg/int4@1']['input'] | null;
+      readonly overallScore: CodecTypes['pg/int4@1']['input'] | null;
+      readonly summary: CodecTypes['pg/text@1']['input'] | null;
+      readonly strengths: CodecTypes['pg/json@1']['input'] | null;
+      readonly improvements: CodecTypes['pg/json@1']['input'] | null;
+      readonly sampleAnswer: CodecTypes['pg/text@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+    };
+    readonly EvaluationReport: {
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly interviewId: CodecTypes['pg/uuid@1']['input'];
+      readonly status: 'PENDING' | 'COMPLETED' | 'FAILED';
+      readonly overallScore: CodecTypes['pg/int4@1']['input'] | null;
+      readonly performanceLevel: CodecTypes['pg/text@1']['input'] | null;
+      readonly summary: CodecTypes['pg/text@1']['input'] | null;
+      readonly questionsEvaluated: CodecTypes['pg/int4@1']['input'] | null;
+      readonly reportPayload: CodecTypes['pg/json@1']['input'] | null;
+      readonly errorMessage: CodecTypes['pg/text@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
     };
     readonly Interview: {
       readonly id: CodecTypes['pg/uuid@1']['input'];
@@ -304,6 +362,35 @@ export type StorageColumnTypes = {
       readonly questionId: CodecTypes['pg/uuid@1']['output'];
       readonly submittedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     };
+    readonly evaluation: {
+      readonly answerId: CodecTypes['pg/uuid@1']['output'];
+      readonly clarityScore: CodecTypes['pg/int4@1']['output'] | null;
+      readonly completenessScore: CodecTypes['pg/int4@1']['output'] | null;
+      readonly correctnessScore: CodecTypes['pg/int4@1']['output'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly improvements: CodecTypes['pg/json@1']['output'] | null;
+      readonly overallScore: CodecTypes['pg/int4@1']['output'] | null;
+      readonly reasoningScore: CodecTypes['pg/int4@1']['output'] | null;
+      readonly sampleAnswer: CodecTypes['pg/text@1']['output'] | null;
+      readonly status: 'PENDING' | 'COMPLETED' | 'FAILED';
+      readonly strengths: CodecTypes['pg/json@1']['output'] | null;
+      readonly summary: CodecTypes['pg/text@1']['output'] | null;
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    };
+    readonly evaluationReport: {
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly errorMessage: CodecTypes['pg/text@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly interviewId: CodecTypes['pg/uuid@1']['output'];
+      readonly overallScore: CodecTypes['pg/int4@1']['output'] | null;
+      readonly performanceLevel: CodecTypes['pg/text@1']['output'] | null;
+      readonly questionsEvaluated: CodecTypes['pg/int4@1']['output'] | null;
+      readonly reportPayload: CodecTypes['pg/json@1']['output'] | null;
+      readonly status: 'PENDING' | 'COMPLETED' | 'FAILED';
+      readonly summary: CodecTypes['pg/text@1']['output'] | null;
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    };
     readonly interview: {
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
       readonly difficulty: 'EASY' | 'MEDIUM' | 'HARD';
@@ -331,6 +418,35 @@ export type StorageColumnInputTypes = {
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly questionId: CodecTypes['pg/uuid@1']['input'];
       readonly submittedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+    };
+    readonly evaluation: {
+      readonly answerId: CodecTypes['pg/uuid@1']['input'];
+      readonly clarityScore: CodecTypes['pg/int4@1']['input'] | null;
+      readonly completenessScore: CodecTypes['pg/int4@1']['input'] | null;
+      readonly correctnessScore: CodecTypes['pg/int4@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly improvements: CodecTypes['pg/json@1']['input'] | null;
+      readonly overallScore: CodecTypes['pg/int4@1']['input'] | null;
+      readonly reasoningScore: CodecTypes['pg/int4@1']['input'] | null;
+      readonly sampleAnswer: CodecTypes['pg/text@1']['input'] | null;
+      readonly status: 'PENDING' | 'COMPLETED' | 'FAILED';
+      readonly strengths: CodecTypes['pg/json@1']['input'] | null;
+      readonly summary: CodecTypes['pg/text@1']['input'] | null;
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+    };
+    readonly evaluationReport: {
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly errorMessage: CodecTypes['pg/text@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly interviewId: CodecTypes['pg/uuid@1']['input'];
+      readonly overallScore: CodecTypes['pg/int4@1']['input'] | null;
+      readonly performanceLevel: CodecTypes['pg/text@1']['input'] | null;
+      readonly questionsEvaluated: CodecTypes['pg/int4@1']['input'] | null;
+      readonly reportPayload: CodecTypes['pg/json@1']['input'] | null;
+      readonly status: 'PENDING' | 'COMPLETED' | 'FAILED';
+      readonly summary: CodecTypes['pg/text@1']['input'] | null;
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
     };
     readonly interview: {
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
@@ -363,8 +479,9 @@ export namespace Models {
     status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
     createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    evaluationReport: public_EvaluationReport | null;
     questions: public_Question[];
-    readonly [RelationKeys]?: 'questions';
+    readonly [RelationKeys]?: 'evaluationReport' | 'questions';
   };
   export type public_Question = {
     id: CodecTypes['pg/uuid@1']['output'];
@@ -382,8 +499,42 @@ export namespace Models {
     questionId: CodecTypes['pg/uuid@1']['output'];
     answerText: CodecTypes['pg/text@1']['output'];
     submittedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    evaluation: public_Evaluation | null;
     question: public_Question;
-    readonly [RelationKeys]?: 'question';
+    readonly [RelationKeys]?: 'evaluation' | 'question';
+  };
+  export type public_Evaluation = {
+    id: CodecTypes['pg/uuid@1']['output'];
+    answerId: CodecTypes['pg/uuid@1']['output'];
+    status: 'PENDING' | 'COMPLETED' | 'FAILED';
+    correctnessScore: CodecTypes['pg/int4@1']['output'] | null;
+    completenessScore: CodecTypes['pg/int4@1']['output'] | null;
+    reasoningScore: CodecTypes['pg/int4@1']['output'] | null;
+    clarityScore: CodecTypes['pg/int4@1']['output'] | null;
+    overallScore: CodecTypes['pg/int4@1']['output'] | null;
+    summary: CodecTypes['pg/text@1']['output'] | null;
+    strengths: CodecTypes['pg/json@1']['output'] | null;
+    improvements: CodecTypes['pg/json@1']['output'] | null;
+    sampleAnswer: CodecTypes['pg/text@1']['output'] | null;
+    createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    answer: public_Answer;
+    readonly [RelationKeys]?: 'answer';
+  };
+  export type public_EvaluationReport = {
+    id: CodecTypes['pg/uuid@1']['output'];
+    interviewId: CodecTypes['pg/uuid@1']['output'];
+    status: 'PENDING' | 'COMPLETED' | 'FAILED';
+    overallScore: CodecTypes['pg/int4@1']['output'] | null;
+    performanceLevel: CodecTypes['pg/text@1']['output'] | null;
+    summary: CodecTypes['pg/text@1']['output'] | null;
+    questionsEvaluated: CodecTypes['pg/int4@1']['output'] | null;
+    reportPayload: CodecTypes['pg/json@1']['output'] | null;
+    errorMessage: CodecTypes['pg/text@1']['output'] | null;
+    createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    interview: public_Interview;
+    readonly [RelationKeys]?: 'interview';
   };
 }
 
@@ -392,6 +543,8 @@ export declare const models: {
     Interview: Models.public_Interview;
     Question: Models.public_Question;
     Answer: Models.public_Answer;
+    Evaluation: Models.public_Evaluation;
+    EvaluationReport: Models.public_EvaluationReport;
   };
 };
 
@@ -450,6 +603,183 @@ type ContractBase = Omit<
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'question';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly evaluation: {
+              columns: {
+                readonly id: {
+                  readonly nativeType: 'uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                };
+                readonly answerId: {
+                  readonly nativeType: 'uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                };
+                readonly status: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'PENDING'>;
+                  };
+                };
+                readonly correctnessScore: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                };
+                readonly completenessScore: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                };
+                readonly reasoningScore: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                };
+                readonly clarityScore: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                };
+                readonly overallScore: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                };
+                readonly summary: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly strengths: {
+                  readonly nativeType: 'json';
+                  readonly codecId: 'pg/json@1';
+                  readonly nullable: true;
+                };
+                readonly improvements: {
+                  readonly nativeType: 'json';
+                  readonly codecId: 'pg/json@1';
+                  readonly nullable: true;
+                };
+                readonly sampleAnswer: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly createdAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                };
+                readonly updatedAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['answerId'] }];
+              indexes: readonly [];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'evaluation';
+                    readonly columns: readonly ['answerId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'answer';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly evaluationReport: {
+              columns: {
+                readonly id: {
+                  readonly nativeType: 'uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                };
+                readonly interviewId: {
+                  readonly nativeType: 'uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                };
+                readonly status: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'PENDING'>;
+                  };
+                };
+                readonly overallScore: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                };
+                readonly performanceLevel: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly summary: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly questionsEvaluated: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                };
+                readonly reportPayload: {
+                  readonly nativeType: 'json';
+                  readonly codecId: 'pg/json@1';
+                  readonly nullable: true;
+                };
+                readonly errorMessage: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly createdAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                };
+                readonly updatedAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['interviewId'] }];
+              indexes: readonly [];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'evaluationReport';
+                    readonly columns: readonly ['interviewId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'interview';
                     readonly columns: readonly ['id'];
                   };
                 },
@@ -569,6 +899,10 @@ type ContractBase = Omit<
             };
           };
           readonly valueSet: {
+            readonly EvaluationStatus: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['PENDING', 'COMPLETED', 'FAILED'];
+            };
             readonly InterviewDifficulty: {
               readonly kind: 'valueSet';
               readonly values: readonly ['EASY', 'MEDIUM', 'HARD'];
@@ -595,6 +929,14 @@ type ContractBase = Omit<
     readonly interview: { readonly namespace: 'public' & NamespaceId; readonly model: 'Interview' };
     readonly question: { readonly namespace: 'public' & NamespaceId; readonly model: 'Question' };
     readonly answer: { readonly namespace: 'public' & NamespaceId; readonly model: 'Answer' };
+    readonly evaluation: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'Evaluation';
+    };
+    readonly evaluationReport: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'EvaluationReport';
+    };
   };
   readonly domain: {
     readonly namespaces: {
@@ -623,6 +965,18 @@ type ContractBase = Omit<
               };
             };
             readonly relations: {
+              readonly evaluation: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Evaluation';
+                };
+                readonly cardinality: '1:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['answerId'];
+                };
+              };
               readonly question: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -644,6 +998,191 @@ type ContractBase = Omit<
                 readonly questionId: { readonly column: 'questionId' };
                 readonly answerText: { readonly column: 'answerText' };
                 readonly submittedAt: { readonly column: 'submittedAt' };
+              };
+            };
+          };
+          readonly Evaluation: {
+            readonly fields: {
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly answerId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly correctnessScore: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly completenessScore: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly reasoningScore: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly clarityScore: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly overallScore: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly summary: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly strengths: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/json@1' };
+              };
+              readonly improvements: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/json@1' };
+              };
+              readonly sampleAnswer: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly answer: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Answer';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['answerId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'evaluation';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly id: { readonly column: 'id' };
+                readonly answerId: { readonly column: 'answerId' };
+                readonly status: { readonly column: 'status' };
+                readonly correctnessScore: { readonly column: 'correctnessScore' };
+                readonly completenessScore: { readonly column: 'completenessScore' };
+                readonly reasoningScore: { readonly column: 'reasoningScore' };
+                readonly clarityScore: { readonly column: 'clarityScore' };
+                readonly overallScore: { readonly column: 'overallScore' };
+                readonly summary: { readonly column: 'summary' };
+                readonly strengths: { readonly column: 'strengths' };
+                readonly improvements: { readonly column: 'improvements' };
+                readonly sampleAnswer: { readonly column: 'sampleAnswer' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+              };
+            };
+          };
+          readonly EvaluationReport: {
+            readonly fields: {
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly interviewId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly overallScore: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly performanceLevel: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly summary: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly questionsEvaluated: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly reportPayload: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/json@1' };
+              };
+              readonly errorMessage: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly interview: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Interview';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['interviewId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'evaluationReport';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly id: { readonly column: 'id' };
+                readonly interviewId: { readonly column: 'interviewId' };
+                readonly status: { readonly column: 'status' };
+                readonly overallScore: { readonly column: 'overallScore' };
+                readonly performanceLevel: { readonly column: 'performanceLevel' };
+                readonly summary: { readonly column: 'summary' };
+                readonly questionsEvaluated: { readonly column: 'questionsEvaluated' };
+                readonly reportPayload: { readonly column: 'reportPayload' };
+                readonly errorMessage: { readonly column: 'errorMessage' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
               };
             };
           };
@@ -689,6 +1228,18 @@ type ContractBase = Omit<
               };
             };
             readonly relations: {
+              readonly evaluationReport: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'EvaluationReport';
+                };
+                readonly cardinality: '1:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['interviewId'];
+                };
+              };
               readonly questions: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -814,6 +1365,14 @@ type ContractBase = Omit<
               { readonly name: 'COMPLETED'; readonly value: 'COMPLETED' },
             ];
           };
+          readonly EvaluationStatus: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'PENDING'; readonly value: 'PENDING' },
+              { readonly name: 'COMPLETED'; readonly value: 'COMPLETED' },
+              { readonly name: 'FAILED'; readonly value: 'FAILED' },
+            ];
+          };
         };
       };
     };
@@ -848,6 +1407,40 @@ type ContractBase = Omit<
             readonly column: 'id';
           };
           readonly onCreate: { readonly kind: 'generator'; readonly id: 'uuidv4' };
+        },
+        {
+          readonly ref: {
+            readonly namespace: 'public';
+            readonly table: 'evaluation';
+            readonly column: 'id';
+          };
+          readonly onCreate: { readonly kind: 'generator'; readonly id: 'uuidv4' };
+        },
+        {
+          readonly ref: {
+            readonly namespace: 'public';
+            readonly table: 'evaluation';
+            readonly column: 'updatedAt';
+          };
+          readonly onCreate: { readonly kind: 'generator'; readonly id: 'instantNow' };
+          readonly onUpdate: { readonly kind: 'generator'; readonly id: 'instantNow' };
+        },
+        {
+          readonly ref: {
+            readonly namespace: 'public';
+            readonly table: 'evaluationReport';
+            readonly column: 'id';
+          };
+          readonly onCreate: { readonly kind: 'generator'; readonly id: 'uuidv4' };
+        },
+        {
+          readonly ref: {
+            readonly namespace: 'public';
+            readonly table: 'evaluationReport';
+            readonly column: 'updatedAt';
+          };
+          readonly onCreate: { readonly kind: 'generator'; readonly id: 'instantNow' };
+          readonly onUpdate: { readonly kind: 'generator'; readonly id: 'instantNow' };
         },
         {
           readonly ref: {

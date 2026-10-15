@@ -19,15 +19,16 @@ enum InterviewStatus {
 }
 
 model Interview {
-  id            Uuid                @id @default(uuid())
-  type          InterviewType
-  difficulty    InterviewDifficulty
-  focusArea     String
-  questionCount Int
-  status        InterviewStatus     @default(NOT_STARTED)
-  createdAt     DateTime            @default(now())
-  updatedAt     temporal.updatedAt()
-  questions     Question[]
+  id               Uuid                @id @default(uuid())
+  type             InterviewType
+  difficulty       InterviewDifficulty
+  focusArea        String
+  questionCount    Int
+  status           InterviewStatus     @default(NOT_STARTED)
+  createdAt        DateTime            @default(now())
+  updatedAt        temporal.updatedAt()
+  questions        Question[]
+  evaluationReport EvaluationReport?
 }
 
 model Question {
@@ -41,10 +42,50 @@ model Question {
   answer       Answer?
 }
 
+enum EvaluationStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
 model Answer {
-  id           Uuid      @id @default(uuid())
-  questionId   Uuid      @unique
-  question     Question  @relation(fields: [questionId], references: [id])
+  id           Uuid        @id @default(uuid())
+  questionId   Uuid        @unique
+  question     Question    @relation(fields: [questionId], references: [id])
   answerText   String
-  submittedAt  DateTime  @default(now())
+  submittedAt  DateTime    @default(now())
+  evaluation   Evaluation?
+}
+
+model Evaluation {
+  id                Uuid             @id @default(uuid())
+  answerId          Uuid             @unique
+  answer            Answer           @relation(fields: [answerId], references: [id])
+  status            EvaluationStatus @default(PENDING)
+  correctnessScore  Int?
+  completenessScore Int?
+  reasoningScore    Int?
+  clarityScore      Int?
+  overallScore      Int?
+  summary           String?
+  strengths         Json?
+  improvements      Json?
+  sampleAnswer      String?
+  createdAt         DateTime         @default(now())
+  updatedAt         temporal.updatedAt()
+}
+
+model EvaluationReport {
+  id                 Uuid             @id @default(uuid())
+  interviewId        Uuid             @unique
+  interview          Interview        @relation(fields: [interviewId], references: [id])
+  status             EvaluationStatus @default(PENDING)
+  overallScore       Int?
+  performanceLevel   String?
+  summary            String?
+  questionsEvaluated Int?
+  reportPayload      Json?
+  errorMessage       String?
+  createdAt          DateTime         @default(now())
+  updatedAt          temporal.updatedAt()
 }

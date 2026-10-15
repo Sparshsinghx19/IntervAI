@@ -1,0 +1,125 @@
+[
+  {
+    "id": "table.evaluationReport",
+    "label": "Create table \"evaluationReport\"",
+    "summary": "Creates table \"evaluationReport\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "evaluationReport"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"evaluationReport\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"evaluationReport\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"evaluationReport\"",
+        "sql": "CREATE TABLE \"public\".\"evaluationReport\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"errorMessage\" text,\n  \"id\" uuid NOT NULL,\n  \"interviewId\" uuid NOT NULL,\n  \"overallScore\" int4,\n  \"performanceLevel\" text,\n  \"questionsEvaluated\" int4,\n  \"reportPayload\" json,\n  \"status\" text DEFAULT 'PENDING' NOT NULL,\n  \"summary\" text,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"evaluationReport_status_check_04ef721f\" CHECK (\"status\" IN ('PENDING', 'COMPLETED', 'FAILED'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"evaluationReport\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"evaluationReport\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.evaluationReport.evaluationReport_interviewId_key",
+    "label": "Add unique constraint on \"evaluationReport\" (interviewId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "evaluationReport_interviewId_key",
+        "table": "evaluationReport"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"evaluationReport_interviewId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "evaluationReport_interviewId_key",
+          "public",
+          "\"public\".\"evaluationReport\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"evaluationReport_interviewId_key\"",
+        "sql": "ALTER TABLE \"public\".\"evaluationReport\" ADD CONSTRAINT \"evaluationReport_interviewId_key\" UNIQUE (\"interviewId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"evaluationReport_interviewId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "evaluationReport_interviewId_key",
+          "public",
+          "\"public\".\"evaluationReport\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.evaluationReport.evaluationReport_interviewId_fkey",
+    "label": "Add foreign key \"evaluationReport_interviewId_fkey\" on \"evaluationReport\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "evaluationReport_interviewId_fkey",
+        "table": "evaluationReport"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"evaluationReport_interviewId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "evaluationReport_interviewId_fkey",
+          "public",
+          "\"public\".\"evaluationReport\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"evaluationReport_interviewId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"evaluationReport\"\nADD CONSTRAINT \"evaluationReport_interviewId_fkey\"\nFOREIGN KEY (\"interviewId\")\nREFERENCES \"public\".\"interview\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"evaluationReport_interviewId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "evaluationReport_interviewId_fkey",
+          "public",
+          "\"public\".\"evaluationReport\""
+        ]
+      }
+    ]
+  }
+]

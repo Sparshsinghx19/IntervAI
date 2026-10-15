@@ -1,0 +1,125 @@
+[
+  {
+    "id": "table.evaluation",
+    "label": "Create table \"evaluation\"",
+    "summary": "Creates table \"evaluation\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "evaluation"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"evaluation\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"evaluation\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"evaluation\"",
+        "sql": "CREATE TABLE \"public\".\"evaluation\" (\n  \"answerId\" uuid NOT NULL,\n  \"clarityScore\" int4,\n  \"completenessScore\" int4,\n  \"correctnessScore\" int4,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" uuid NOT NULL,\n  \"improvements\" json,\n  \"overallScore\" int4,\n  \"reasoningScore\" int4,\n  \"sampleAnswer\" text,\n  \"status\" text DEFAULT 'PENDING' NOT NULL,\n  \"strengths\" json,\n  \"summary\" text,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"evaluation_status_check_04ef721f\" CHECK (\"status\" IN ('PENDING', 'COMPLETED', 'FAILED'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"evaluation\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"evaluation\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.evaluation.evaluation_answerId_key",
+    "label": "Add unique constraint on \"evaluation\" (answerId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "evaluation_answerId_key",
+        "table": "evaluation"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"evaluation_answerId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "evaluation_answerId_key",
+          "public",
+          "\"public\".\"evaluation\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"evaluation_answerId_key\"",
+        "sql": "ALTER TABLE \"public\".\"evaluation\" ADD CONSTRAINT \"evaluation_answerId_key\" UNIQUE (\"answerId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"evaluation_answerId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "evaluation_answerId_key",
+          "public",
+          "\"public\".\"evaluation\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.evaluation.evaluation_answerId_fkey",
+    "label": "Add foreign key \"evaluation_answerId_fkey\" on \"evaluation\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "evaluation_answerId_fkey",
+        "table": "evaluation"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"evaluation_answerId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "evaluation_answerId_fkey",
+          "public",
+          "\"public\".\"evaluation\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"evaluation_answerId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"evaluation\"\nADD CONSTRAINT \"evaluation_answerId_fkey\"\nFOREIGN KEY (\"answerId\")\nREFERENCES \"public\".\"answer\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"evaluation_answerId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "evaluation_answerId_fkey",
+          "public",
+          "\"public\".\"evaluation\""
+        ]
+      }
+    ]
+  }
+]
