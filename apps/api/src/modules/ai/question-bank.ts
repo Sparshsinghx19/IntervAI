@@ -10,21 +10,21 @@ export interface QuestionBankEntry {
   questionText: string;
   tags: string[];
   type: QuestionType;
+  codingProblemSlug?: string;
 }
 
 export const questionBank: QuestionBankEntry[] = [
   // DSA - EASY (5)
   { id: 1, topic: 'DSA', subtopic: 'Arrays', difficulty: 'EASY', questionText: 'Explain how to find the missing number in a given integer array of 1 to 100.', tags: ['array', 'math'], type: 'THEORY' },
-  { id: 31, topic: 'DSA', subtopic: 'Strings', difficulty: 'EASY', questionText: 'How do you check if a string is a palindrome?', tags: ['string', 'two-pointers'], type: 'CODING' },
+  { id: 31, topic: 'DSA', subtopic: 'Strings', difficulty: 'EASY', questionText: 'How do you check if a string is a palindrome?', tags: ['string', 'two-pointers'], type: 'CODING', codingProblemSlug: 'valid-palindrome' },
   { id: 32, topic: 'DSA', subtopic: 'Arrays', difficulty: 'EASY', questionText: 'Explain how to find the maximum and minimum elements in an array.', tags: ['array', 'search'], type: 'THEORY' },
   { id: 33, topic: 'DSA', subtopic: 'Hashing', difficulty: 'EASY', questionText: 'What is a hash table and how does it handle collisions?', tags: ['hash-table', 'data-structures'], type: 'THEORY' },
-  { id: 34, topic: 'DSA', subtopic: 'Linked Lists', difficulty: 'EASY', questionText: 'How do you reverse a singly linked list?', tags: ['linked-list', 'pointers'], type: 'CODING' },
+  { id: 34, topic: 'DSA', subtopic: 'Linked Lists', difficulty: 'EASY', questionText: 'How do you reverse a singly linked list?', tags: ['linked-list', 'pointers'], type: 'CODING', codingProblemSlug: 'reverse-linked-list' },
   
-  // DSA - MEDIUM (5)
-  { id: 2, topic: 'DSA', subtopic: 'Linked Lists', difficulty: 'MEDIUM', questionText: 'Describe an algorithm to detect a cycle in a singly linked list.', tags: ['linked-list', 'two-pointers'], type: 'CODING' },
+  { id: 2, topic: 'DSA', subtopic: 'Linked Lists', difficulty: 'MEDIUM', questionText: 'Describe an algorithm to detect a cycle in a singly linked list.', tags: ['linked-list', 'two-pointers'], type: 'CODING', codingProblemSlug: 'linked-list-cycle' },
   { id: 3, topic: 'DSA', subtopic: 'Trees', difficulty: 'MEDIUM', questionText: 'How do you find the lowest common ancestor of two nodes in a binary search tree?', tags: ['tree', 'bst'], type: 'THEORY' },
   { id: 4, topic: 'DSA', subtopic: 'Graphs', difficulty: 'MEDIUM', questionText: 'Explain the difference between Breadth-First Search (BFS) and Depth-First Search (DFS). When would you use each?', tags: ['graph', 'bfs', 'dfs'], type: 'THEORY' },
-  { id: 35, topic: 'DSA', subtopic: 'Dynamic Programming', difficulty: 'MEDIUM', questionText: 'Explain how to solve the coin change problem using dynamic programming.', tags: ['dp', 'coin-change'], type: 'CODING' },
+  { id: 35, topic: 'DSA', subtopic: 'Dynamic Programming', difficulty: 'MEDIUM', questionText: 'Explain how to solve the coin change problem using dynamic programming.', tags: ['dp', 'coin-change'], type: 'CODING', codingProblemSlug: 'coin-change' },
   { id: 36, topic: 'DSA', subtopic: 'Trees', difficulty: 'MEDIUM', questionText: 'How do you check if a binary tree is balanced?', tags: ['tree', 'recursion'], type: 'THEORY' },
 
   // DSA - HARD (5)

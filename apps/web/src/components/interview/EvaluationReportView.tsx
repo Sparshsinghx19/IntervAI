@@ -383,50 +383,101 @@ export function EvaluationReportView({
                       "{q.summary}"
                     </p>
 
-                    {/* Rubric Breakdown Grid */}
-                    <div>
-                      <h4 className="text-xs uppercase tracking-wider font-semibold text-slate-400 mb-3">
-                        Rubric Dimensions
-                      </h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                        {criteria.map((crit, cIdx) => {
-                          const cStyle = getScoreColor(crit.score);
-                          return (
-                            <div
-                              key={cIdx}
-                              className="bg-white/5 border border-white/10 rounded-xl p-3.5 space-y-2"
-                            >
-                              <div className="flex justify-between items-center text-xs">
-                                <span className="font-medium text-slate-300">{crit.label}</span>
-                                <span className="text-[10px] text-slate-500">{crit.weight}</span>
-                              </div>
-                              <div className="flex items-baseline justify-between">
-                                <span className={`text-xl font-bold font-mono ${cStyle.text}`}>
-                                  {crit.score}
-                                </span>
-                                <span className="text-[10px] text-slate-500">/100</span>
-                              </div>
-                              <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
-                                <div
-                                  className={`h-full transition-all duration-500 rounded-full ${
-                                    crit.score >= 80 ? 'bg-emerald-400' : crit.score >= 60 ? 'bg-cyan-400' : 'bg-amber-400'
-                                  }`}
-                                  style={{ width: `${crit.score}%` }}
-                                />
-                              </div>
+                    {/* Question Breakdown: Objective Coding Execution or Rubric Dimensions */}
+                    {q.questionType === 'CODING' || q.submissionStatus ? (
+                      <div>
+                        <h4 className="text-xs uppercase tracking-wider font-semibold text-slate-400 mb-3">
+                          Execution Results
+                        </h4>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                          <div className="bg-white/5 border border-white/10 rounded-xl p-3.5 space-y-1">
+                            <span className="text-xs font-medium text-slate-400">Submission Status</span>
+                            <div className="pt-1">
+                              <span
+                                className={`inline-block px-2.5 py-0.5 rounded text-xs font-bold font-mono ${
+                                  q.submissionStatus === 'ACCEPTED'
+                                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                    : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                                }`}
+                              >
+                                {q.submissionStatus || 'NOT_SUBMITTED'}
+                              </span>
                             </div>
-                          );
-                        })}
-                      </div>
-                    </div>
+                          </div>
 
-                    {/* Candidate Answer Box */}
+                          <div className="bg-white/5 border border-white/10 rounded-xl p-3.5 space-y-1">
+                            <span className="text-xs font-medium text-slate-400">Test Cases Passed</span>
+                            <div className="text-xl font-bold font-mono text-cyan-400">
+                              {q.testsPassed ?? 0}
+                              <span className="text-xs text-slate-500 font-normal"> / {q.totalTests ?? 0}</span>
+                            </div>
+                          </div>
+
+                          <div className="bg-white/5 border border-white/10 rounded-xl p-3.5 space-y-1">
+                            <span className="text-xs font-medium text-slate-400">Language</span>
+                            <div className="text-base font-bold font-mono text-brand-300 uppercase">
+                              {q.language || 'N/A'}
+                            </div>
+                          </div>
+
+                          <div className="bg-white/5 border border-white/10 rounded-xl p-3.5 space-y-1">
+                            <span className="text-xs font-medium text-slate-400">Runtime / Memory</span>
+                            <div className="text-xs font-mono text-slate-300 pt-1">
+                              {q.executionTimeMs != null ? `${q.executionTimeMs} ms` : 'N/A'}
+                              {q.memoryKb != null ? ` / ${Math.round(q.memoryKb / 1024)} MB` : ''}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <h4 className="text-xs uppercase tracking-wider font-semibold text-slate-400 mb-3">
+                          Rubric Dimensions
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                          {criteria.map((crit, cIdx) => {
+                            const cStyle = getScoreColor(crit.score ?? 0);
+                            return (
+                              <div
+                                key={cIdx}
+                                className="bg-white/5 border border-white/10 rounded-xl p-3.5 space-y-2"
+                              >
+                                <div className="flex justify-between items-center text-xs">
+                                  <span className="font-medium text-slate-300">{crit.label}</span>
+                                  <span className="text-[10px] text-slate-500">{crit.weight}</span>
+                                </div>
+                                <div className="flex items-baseline justify-between">
+                                  <span className={`text-xl font-bold font-mono ${cStyle.text}`}>
+                                    {crit.score ?? 0}
+                                  </span>
+                                  <span className="text-[10px] text-slate-500">/100</span>
+                                </div>
+                                <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+                                  <div
+                                    className={`h-full transition-all duration-500 rounded-full ${
+                                      (crit.score ?? 0) >= 80 ? 'bg-emerald-400' : (crit.score ?? 0) >= 60 ? 'bg-cyan-400' : 'bg-amber-400'
+                                    }`}
+                                    style={{ width: `${crit.score ?? 0}%` }}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Candidate Answer / Code Box */}
                     {q.candidateAnswer && (
                       <div className="space-y-1.5">
                         <span className="text-xs uppercase tracking-wider font-semibold text-slate-400">
-                          Your Submitted Answer
+                          {q.questionType === 'CODING' ? 'Your Submitted Code' : 'Your Submitted Answer'}
                         </span>
-                        <div className="bg-white/5 rounded-lg p-3 text-xs text-slate-300 leading-relaxed max-h-48 overflow-y-auto whitespace-pre-wrap font-sans border border-white/5">
+                        <div
+                          className={`bg-white/5 rounded-lg p-3 text-xs text-slate-300 leading-relaxed max-h-48 overflow-y-auto whitespace-pre-wrap border border-white/5 ${
+                            q.questionType === 'CODING' ? 'font-mono' : 'font-sans'
+                          }`}
+                        >
                           {q.candidateAnswer}
                         </div>
                       </div>

@@ -32,15 +32,22 @@ export interface QuestionEvaluationResult {
   questionText: string;
   orderIndex: number;
   candidateAnswer: string;
-  correctnessScore: number;
-  completenessScore: number;
-  reasoningScore: number;
-  clarityScore: number;
+  correctnessScore?: number;
+  completenessScore?: number;
+  reasoningScore?: number;
+  clarityScore?: number;
   overallScore: number;
   summary: string;
   strengths: string[];
   improvements: string[];
   sampleAnswer: string;
+  questionType?: QuestionType | string;
+  submissionStatus?: string;
+  testsPassed?: number;
+  totalTests?: number;
+  language?: string;
+  executionTimeMs?: number;
+  memoryKb?: number;
 }
 
 export interface CrossInterviewAnalysis {
@@ -78,4 +85,3 @@ export interface EvaluationReportResponse {
   createdAt: string;
   updatedAt: string;
 }
-

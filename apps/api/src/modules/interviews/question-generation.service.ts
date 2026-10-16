@@ -29,11 +29,29 @@ export const questionGenerationService = {
     }
 
     for (let i = 0; i < count; i++) {
+      const qTextBase = baseQuestions[i % baseQuestions.length!];
+      let slug: string | null = null;
+      if (questionType === 'CODING') {
+        const lower = qTextBase.toLowerCase();
+        if (lower.includes('reverse') && lower.includes('linked list')) {
+          slug = 'reverse-linked-list';
+        } else if (lower.includes('cycle') && lower.includes('linked list')) {
+          slug = 'linked-list-cycle';
+        } else if (lower.includes('palindrome')) {
+          slug = 'valid-palindrome';
+        } else if (lower.includes('two sum')) {
+          slug = 'two-sum-ii-input-array-is-sorted';
+        } else if (lower.includes('coin change')) {
+          slug = 'coin-change';
+        }
+      }
+
       questions.push({
         interviewId,
-        questionText: `${baseQuestions[i % baseQuestions.length!]} (Difficulty: ${difficulty})`,
+        questionText: `${qTextBase} (Difficulty: ${difficulty})`,
         orderIndex: i + 1,
         type: questionType,
+        codingProblemSlug: slug,
       });
     }
     return questions;

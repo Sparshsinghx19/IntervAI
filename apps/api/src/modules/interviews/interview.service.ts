@@ -2,6 +2,7 @@ import { db } from '../../prisma/db.js';
 import { questionGenerationService } from './question-generation.service.js';
 import { retrieveQuestions } from '../ai/question-retrieval.service.js';
 import { questionBank, Topic } from '../ai/question-bank.js';
+import { findCodingProblemForQuestion } from '../coding/coding-problems.catalog.js';
 
 interface CreateInterviewData {
   type: 'TECHNICAL' | 'BEHAVIORAL' | 'HR';
@@ -63,11 +64,19 @@ export const interviewService = {
         if (retrievedQuestionsText) {
           questionsData = retrievedQuestionsText.map((text, i) => {
             const entry = questionBank.find(qb => qb.questionText === text);
+            let slug = entry?.codingProblemSlug || null;
+            if (!slug) {
+              const resolved = findCodingProblemForQuestion(text);
+              if (resolved) {
+                slug = resolved.slug;
+              }
+            }
             return {
               interviewId: interview.id,
               questionText: text,
               orderIndex: i + 1,
-              type: entry?.type || (data.focusArea.toLowerCase() === 'system design' || data.focusArea.toLowerCase() === 'system-design' ? 'SYSTEM_DESIGN' : data.focusArea.toLowerCase() === 'dsa' ? 'CODING' : 'THEORY')
+              type: entry?.type || (data.focusArea.toLowerCase() === 'system design' || data.focusArea.toLowerCase() === 'system-design' ? 'SYSTEM_DESIGN' : data.focusArea.toLowerCase() === 'dsa' ? 'CODING' : 'THEORY'),
+              codingProblemSlug: slug,
             };
           });
         } else {
@@ -104,16 +113,26 @@ export const interviewService = {
 
   getInterviewQuestions: async (interviewId: string) => {
     const plan = db.sql.public.question
-      .select('id', 'questionText', 'orderIndex', 'type')
+      .select('id', 'questionText', 'orderIndex', 'type', 'codingProblemSlug')
       .where((f, fns) => fns.eq(f.interviewId, interviewId))
       .orderBy((f) => f.orderIndex, { direction: 'asc' })
       .build();
 
     const questions = await db.runtime().query(plan);
-    return questions.map((q: any) => ({
-      ...q,
-      type: q.type || 'THEORY'
-    }));
+    return questions.map((q: any) => {
+      let slug = q.codingProblemSlug;
+      if (!slug && q.type === 'CODING') {
+        const resolved = findCodingProblemForQuestion(q.questionText);
+        if (resolved) {
+          slug = resolved.slug;
+        }
+      }
+      return {
+        ...q,
+        type: q.type || 'THEORY',
+        codingProblemSlug: slug || null,
+      };
+    });
   },
 
   startInterview: async (id: string) => {
@@ -163,15 +182,29 @@ export const interviewService = {
       }
 
       const questions = await tx.orm.public.Question.where({ interviewId }).all();
-      const questionIds = questions.map(q => q.id);
-      
-      const answersRes = await tx.orm.public.Answer
-        .where((a) => a.questionId.in(questionIds))
-        .aggregate((agg) => ({
-          count: agg.count()
-        }));
+      const theoryQuestions = questions.filter((q: any) => q.type !== 'CODING');
+      const codingQuestions = questions.filter((q: any) => q.type === 'CODING');
 
-      if (answersRes.count >= interview.questionCount) {
+      let theoryAnswered = 0;
+      if (theoryQuestions.length > 0) {
+        const theoryIds = theoryQuestions.map((q: any) => q.id);
+        const ansRes = await tx.orm.public.Answer
+          .where((a: any) => a.questionId.in(theoryIds))
+          .aggregate((agg: any) => ({ count: agg.count() }));
+        theoryAnswered = Number((ansRes as any).count) || 0;
+      }
+
+      let codingAnswered = 0;
+      if (codingQuestions.length > 0) {
+        const codingIds = codingQuestions.map((q: any) => q.id);
+        const subs = await tx.orm.public.CodeSubmission
+          .where((cs: any) => cs.questionId.in(codingIds))
+          .all();
+        codingAnswered = new Set(subs.map((s: any) => s.questionId)).size;
+      }
+
+      const totalAnswered = theoryAnswered + codingAnswered;
+      if (totalAnswered >= interview.questionCount && totalAnswered >= questions.length) {
         await tx.orm.public.Interview.where({ id: interviewId }).update({ status: 'COMPLETED' });
       }
 

@@ -30,6 +30,7 @@ import {
   generateEvaluationReport,
   fetchEvaluationReport,
 } from '@/lib/evaluation-api';
+import { SubmitCodeResponse } from '@/lib/coding-api';
 
 
 type AIStatus = 'LISTENING' | 'EVALUATING' | 'COMPLETED';
@@ -112,7 +113,7 @@ function InterviewSessionContent() {
         setReportError(result.error || 'Failed to generate evaluation report. Your answers are safely stored.');
         setIsGeneratingReport(false);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Report generation error:', err);
       setReportError('Network error while generating evaluation report. Your answers are safely stored.');
       setIsGeneratingReport(false);
@@ -194,11 +195,9 @@ function InterviewSessionContent() {
   useEffect(() => {
     if (currentQuestion) {
       const qType = currentQuestion.type || 'THEORY';
-      if (qType === 'CODING') {
-        setMode('code');
-      } else {
-        setMode('text');
-      }
+      // Synchronize workspace mode based on current question type
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setMode(qType === 'CODING' ? 'code' : 'text');
     }
   }, [currentIndex, currentQuestion]);
 
@@ -427,6 +426,58 @@ function InterviewSessionContent() {
     loadEvaluationReport();
   };
 
+  const handleCodingSubmissionSuccess = async (submission: SubmitCodeResponse) => {
+    const updatedAnswers = { ...savedAnswersByQuestion, [currentQuestionId]: submission.sourceCode };
+    setSavedAnswersByQuestion(updatedAnswers);
+    setEvaluationStage('saved');
+
+    if (currentIndex < questions.length - 1) {
+      const nextIndex = currentIndex + 1;
+      const nextQuestionId = String(questions[nextIndex]?.id);
+      setCurrentIndex(nextIndex);
+      setAnswer(updatedAnswers[nextQuestionId] || '');
+      setEvaluationStage('idle');
+      setIsSubmitting(false);
+      setAiStatus('LISTENING');
+      return;
+    }
+
+    const unansweredIndex = questions.findIndex(
+      (q, idx) => idx !== currentIndex && !updatedAnswers[String(q.id)]?.trim()
+    );
+
+    if (unansweredIndex !== -1) {
+      setCurrentIndex(unansweredIndex);
+      setAnswer(updatedAnswers[String(questions[unansweredIndex]?.id)] || '');
+      setEvaluationStage('idle');
+      setIsSubmitting(false);
+      setValidationError('Please complete all interview questions before viewing the final report.');
+      return;
+    }
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+    try {
+      const statusRes = await fetch(`${apiUrl}/api/interviews/${id}`);
+      if (statusRes.ok) {
+        const interviewData = await statusRes.json();
+        if (interviewData.status === 'COMPLETED') {
+          setIsSubmitting(false);
+          setIsInterviewComplete(true);
+          setAiStatus('COMPLETED');
+          loadEvaluationReport();
+          return;
+        }
+      }
+    } catch (err) {
+      console.error('Failed to verify interview completion:', err);
+    }
+
+    setIsSubmitting(false);
+    setIsInterviewComplete(true);
+    setAiStatus('COMPLETED');
+    loadEvaluationReport();
+  };
+
   const handleSkip = () => {
     setValidationError('');
     setEvaluationError('');
@@ -549,13 +600,13 @@ function InterviewSessionContent() {
 
 
   return (
-    <div className="min-h-screen bg-obsidian text-foreground selection:bg-brand-500/30 flex flex-col">
+    <div className="min-h-screen h-screen max-h-screen bg-obsidian text-foreground selection:bg-brand-500/30 flex flex-col overflow-hidden">
       <Navbar mode="session" />
       <div className="absolute inset-0 bg-grid-pattern opacity-40 pointer-events-none" />
       <div className="absolute inset-0 bg-glow-gradient opacity-20 pointer-events-none" />
 
       {/* Full-Viewport Main Session Shell */}
-      <div className="relative z-10 flex-1 flex flex-col pt-18 pb-3 px-3 sm:px-6 max-w-[1800px] w-full mx-auto min-h-0 h-screen lg:overflow-hidden overflow-y-auto">
+      <div className="relative z-10 flex-1 flex flex-col pt-18 pb-3 px-3 sm:px-6 max-w-[1800px] w-full mx-auto min-h-0 h-full overflow-hidden">
 
         {/* Top Session Navigation & Context Bar */}
         <div className="h-12 flex items-center justify-between border-b border-white/10 pb-2 mb-2 shrink-0">
@@ -639,12 +690,13 @@ function InterviewSessionContent() {
             onReturnToSetup={() => router.push('/interview')}
           />
         ) : isCodingQuestion && mode === 'code' ? (
-          <div className="flex-1 min-h-0 overflow-hidden">
+          <div className="flex-1 min-h-0 h-full flex flex-col overflow-hidden">
             <CodingWorkspace
+              interviewId={id as string}
               question={currentQuestion}
               interviewDifficulty={interviewDifficulty}
               interviewFocusArea={focusArea}
-              onSubmit={handleCodeSubmit}
+              onSubmitSuccess={handleCodingSubmissionSuccess}
               isSubmitting={isSubmitting}
               questionNumber={currentIndex + 1}
               totalQuestions={questions.length}

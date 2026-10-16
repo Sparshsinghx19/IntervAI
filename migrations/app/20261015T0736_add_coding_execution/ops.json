@@ -1,0 +1,284 @@
+[
+  {
+    "id": "table.codeSubmission",
+    "label": "Create table \"codeSubmission\"",
+    "summary": "Creates table \"codeSubmission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "codeSubmission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"codeSubmission\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"codeSubmission\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"codeSubmission\"",
+        "sql": "CREATE TABLE \"public\".\"codeSubmission\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"executionTimeMs\" int4,\n  \"id\" uuid NOT NULL,\n  \"interviewId\" uuid NOT NULL,\n  \"language\" text NOT NULL,\n  \"memoryKb\" int4,\n  \"questionId\" uuid NOT NULL,\n  \"sourceCode\" text NOT NULL,\n  \"status\" text NOT NULL,\n  \"testResults\" json,\n  \"testsPassed\" int4 NOT NULL,\n  \"totalTests\" int4 NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"codeSubmission\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"codeSubmission\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.codingTestCase",
+    "label": "Create table \"codingTestCase\"",
+    "summary": "Creates table \"codingTestCase\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "codingTestCase"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"codingTestCase\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"codingTestCase\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"codingTestCase\"",
+        "sql": "CREATE TABLE \"public\".\"codingTestCase\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"expectedOutput\" text NOT NULL,\n  \"id\" uuid NOT NULL,\n  \"input\" text NOT NULL,\n  \"isHidden\" bool DEFAULT false NOT NULL,\n  \"orderIndex\" int4 NOT NULL,\n  \"problemSlug\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"codingTestCase\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"codingTestCase\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.question.codingProblemSlug",
+    "label": "Add column \"codingProblemSlug\" to \"question\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "codingProblemSlug",
+        "table": "question"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"codingProblemSlug\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "question",
+          "codingProblemSlug"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"codingProblemSlug\"",
+        "sql": "ALTER TABLE \"public\".\"question\" ADD COLUMN \"codingProblemSlug\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"codingProblemSlug\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "question",
+          "codingProblemSlug"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.codeSubmission.codeSubmission_interviewId_idx_766b64f2",
+    "label": "Create index \"codeSubmission_interviewId_idx_766b64f2\" on \"codeSubmission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "codeSubmission_interviewId_idx_766b64f2",
+        "table": "codeSubmission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"codeSubmission_interviewId_idx_766b64f2\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"codeSubmission_interviewId_idx_766b64f2\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"codeSubmission_interviewId_idx_766b64f2\"",
+        "sql": "CREATE INDEX \"codeSubmission_interviewId_idx_766b64f2\" ON \"public\".\"codeSubmission\" (\"interviewId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"codeSubmission_interviewId_idx_766b64f2\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"codeSubmission_interviewId_idx_766b64f2\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.codeSubmission.codeSubmission_questionId_idx_fdb42076",
+    "label": "Create index \"codeSubmission_questionId_idx_fdb42076\" on \"codeSubmission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "codeSubmission_questionId_idx_fdb42076",
+        "table": "codeSubmission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"codeSubmission_questionId_idx_fdb42076\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"codeSubmission_questionId_idx_fdb42076\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"codeSubmission_questionId_idx_fdb42076\"",
+        "sql": "CREATE INDEX \"codeSubmission_questionId_idx_fdb42076\" ON \"public\".\"codeSubmission\" (\"questionId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"codeSubmission_questionId_idx_fdb42076\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"codeSubmission_questionId_idx_fdb42076\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.codeSubmission.codeSubmission_interviewId_fkey",
+    "label": "Add foreign key \"codeSubmission_interviewId_fkey\" on \"codeSubmission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "codeSubmission_interviewId_fkey",
+        "table": "codeSubmission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"codeSubmission_interviewId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "codeSubmission_interviewId_fkey",
+          "public",
+          "\"public\".\"codeSubmission\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"codeSubmission_interviewId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"codeSubmission\"\nADD CONSTRAINT \"codeSubmission_interviewId_fkey\"\nFOREIGN KEY (\"interviewId\")\nREFERENCES \"public\".\"interview\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"codeSubmission_interviewId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "codeSubmission_interviewId_fkey",
+          "public",
+          "\"public\".\"codeSubmission\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.codeSubmission.codeSubmission_questionId_fkey",
+    "label": "Add foreign key \"codeSubmission_questionId_fkey\" on \"codeSubmission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "codeSubmission_questionId_fkey",
+        "table": "codeSubmission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"codeSubmission_questionId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "codeSubmission_questionId_fkey",
+          "public",
+          "\"public\".\"codeSubmission\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"codeSubmission_questionId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"codeSubmission\"\nADD CONSTRAINT \"codeSubmission_questionId_fkey\"\nFOREIGN KEY (\"questionId\")\nREFERENCES \"public\".\"question\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"codeSubmission_questionId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "codeSubmission_questionId_fkey",
+          "public",
+          "\"public\".\"codeSubmission\""
+        ]
+      }
+    ]
+  }
+]

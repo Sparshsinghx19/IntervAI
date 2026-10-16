@@ -34,9 +34,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'08cb7a5b092eb7e8b2776a2ff29671bc5037a32ba2a07b4b8b0cb363c9f929b8'>;
+  StorageHashBase<'0e038f1a2c53628e5a939510286cf176b89e6a2a22376bee2b5c9c18db6b3854'>;
 export type ExecutionHash =
-  ExecutionHashBase<'685caf5cd36fd558e5b5ec51869330d9c0cb86ef11ad72c915c7bcd3ab53dbbc'>;
+  ExecutionHashBase<'e43e660672a1d51296207199f4df34f890fc97e355e2d3d074940cfff782b678'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -248,6 +248,29 @@ export type FieldOutputTypes = {
       readonly answerText: CodecTypes['pg/text@1']['output'];
       readonly submittedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     };
+    readonly CodeSubmission: {
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly interviewId: CodecTypes['pg/uuid@1']['output'];
+      readonly questionId: CodecTypes['pg/uuid@1']['output'];
+      readonly language: CodecTypes['pg/text@1']['output'];
+      readonly sourceCode: CodecTypes['pg/text@1']['output'];
+      readonly status: CodecTypes['pg/text@1']['output'];
+      readonly testsPassed: CodecTypes['pg/int4@1']['output'];
+      readonly totalTests: CodecTypes['pg/int4@1']['output'];
+      readonly executionTimeMs: CodecTypes['pg/int4@1']['output'] | null;
+      readonly memoryKb: CodecTypes['pg/int4@1']['output'] | null;
+      readonly testResults: CodecTypes['pg/json@1']['output'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    };
+    readonly CodingTestCase: {
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly problemSlug: CodecTypes['pg/text@1']['output'];
+      readonly input: CodecTypes['pg/text@1']['output'];
+      readonly expectedOutput: CodecTypes['pg/text@1']['output'];
+      readonly isHidden: CodecTypes['pg/bool@1']['output'];
+      readonly orderIndex: CodecTypes['pg/int4@1']['output'];
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    };
     readonly Evaluation: {
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly answerId: CodecTypes['pg/uuid@1']['output'];
@@ -293,6 +316,7 @@ export type FieldOutputTypes = {
       readonly questionText: CodecTypes['pg/text@1']['output'];
       readonly orderIndex: CodecTypes['pg/int4@1']['output'];
       readonly type: 'THEORY' | 'CODING' | 'SYSTEM_DESIGN';
+      readonly codingProblemSlug: CodecTypes['pg/text@1']['output'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     };
@@ -305,6 +329,29 @@ export type FieldInputTypes = {
       readonly questionId: CodecTypes['pg/uuid@1']['input'];
       readonly answerText: CodecTypes['pg/text@1']['input'];
       readonly submittedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+    };
+    readonly CodeSubmission: {
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly interviewId: CodecTypes['pg/uuid@1']['input'];
+      readonly questionId: CodecTypes['pg/uuid@1']['input'];
+      readonly language: CodecTypes['pg/text@1']['input'];
+      readonly sourceCode: CodecTypes['pg/text@1']['input'];
+      readonly status: CodecTypes['pg/text@1']['input'];
+      readonly testsPassed: CodecTypes['pg/int4@1']['input'];
+      readonly totalTests: CodecTypes['pg/int4@1']['input'];
+      readonly executionTimeMs: CodecTypes['pg/int4@1']['input'] | null;
+      readonly memoryKb: CodecTypes['pg/int4@1']['input'] | null;
+      readonly testResults: CodecTypes['pg/json@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+    };
+    readonly CodingTestCase: {
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly problemSlug: CodecTypes['pg/text@1']['input'];
+      readonly input: CodecTypes['pg/text@1']['input'];
+      readonly expectedOutput: CodecTypes['pg/text@1']['input'];
+      readonly isHidden: CodecTypes['pg/bool@1']['input'];
+      readonly orderIndex: CodecTypes['pg/int4@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
     };
     readonly Evaluation: {
       readonly id: CodecTypes['pg/uuid@1']['input'];
@@ -351,6 +398,7 @@ export type FieldInputTypes = {
       readonly questionText: CodecTypes['pg/text@1']['input'];
       readonly orderIndex: CodecTypes['pg/int4@1']['input'];
       readonly type: 'THEORY' | 'CODING' | 'SYSTEM_DESIGN';
+      readonly codingProblemSlug: CodecTypes['pg/text@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
     };
@@ -363,6 +411,29 @@ export type StorageColumnTypes = {
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly questionId: CodecTypes['pg/uuid@1']['output'];
       readonly submittedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    };
+    readonly codeSubmission: {
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly executionTimeMs: CodecTypes['pg/int4@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly interviewId: CodecTypes['pg/uuid@1']['output'];
+      readonly language: CodecTypes['pg/text@1']['output'];
+      readonly memoryKb: CodecTypes['pg/int4@1']['output'] | null;
+      readonly questionId: CodecTypes['pg/uuid@1']['output'];
+      readonly sourceCode: CodecTypes['pg/text@1']['output'];
+      readonly status: CodecTypes['pg/text@1']['output'];
+      readonly testResults: CodecTypes['pg/json@1']['output'] | null;
+      readonly testsPassed: CodecTypes['pg/int4@1']['output'];
+      readonly totalTests: CodecTypes['pg/int4@1']['output'];
+    };
+    readonly codingTestCase: {
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly expectedOutput: CodecTypes['pg/text@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly input: CodecTypes['pg/text@1']['output'];
+      readonly isHidden: CodecTypes['pg/bool@1']['output'];
+      readonly orderIndex: CodecTypes['pg/int4@1']['output'];
+      readonly problemSlug: CodecTypes['pg/text@1']['output'];
     };
     readonly evaluation: {
       readonly answerId: CodecTypes['pg/uuid@1']['output'];
@@ -404,6 +475,7 @@ export type StorageColumnTypes = {
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     };
     readonly question: {
+      readonly codingProblemSlug: CodecTypes['pg/text@1']['output'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly interviewId: CodecTypes['pg/uuid@1']['output'];
@@ -421,6 +493,29 @@ export type StorageColumnInputTypes = {
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly questionId: CodecTypes['pg/uuid@1']['input'];
       readonly submittedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+    };
+    readonly codeSubmission: {
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly executionTimeMs: CodecTypes['pg/int4@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly interviewId: CodecTypes['pg/uuid@1']['input'];
+      readonly language: CodecTypes['pg/text@1']['input'];
+      readonly memoryKb: CodecTypes['pg/int4@1']['input'] | null;
+      readonly questionId: CodecTypes['pg/uuid@1']['input'];
+      readonly sourceCode: CodecTypes['pg/text@1']['input'];
+      readonly status: CodecTypes['pg/text@1']['input'];
+      readonly testResults: CodecTypes['pg/json@1']['input'] | null;
+      readonly testsPassed: CodecTypes['pg/int4@1']['input'];
+      readonly totalTests: CodecTypes['pg/int4@1']['input'];
+    };
+    readonly codingTestCase: {
+      readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly expectedOutput: CodecTypes['pg/text@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly input: CodecTypes['pg/text@1']['input'];
+      readonly isHidden: CodecTypes['pg/bool@1']['input'];
+      readonly orderIndex: CodecTypes['pg/int4@1']['input'];
+      readonly problemSlug: CodecTypes['pg/text@1']['input'];
     };
     readonly evaluation: {
       readonly answerId: CodecTypes['pg/uuid@1']['input'];
@@ -462,6 +557,7 @@ export type StorageColumnInputTypes = {
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
     };
     readonly question: {
+      readonly codingProblemSlug: CodecTypes['pg/text@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly interviewId: CodecTypes['pg/uuid@1']['input'];
@@ -483,9 +579,10 @@ export namespace Models {
     status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
     createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    codeSubmissions: public_CodeSubmission[];
     evaluationReport: public_EvaluationReport | null;
     questions: public_Question[];
-    readonly [RelationKeys]?: 'evaluationReport' | 'questions';
+    readonly [RelationKeys]?: 'codeSubmissions' | 'evaluationReport' | 'questions';
   };
   export type public_Question = {
     id: CodecTypes['pg/uuid@1']['output'];
@@ -493,11 +590,13 @@ export namespace Models {
     questionText: CodecTypes['pg/text@1']['output'];
     orderIndex: CodecTypes['pg/int4@1']['output'];
     type: 'THEORY' | 'CODING' | 'SYSTEM_DESIGN';
+    codingProblemSlug: CodecTypes['pg/text@1']['output'] | null;
     createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     answer: public_Answer | null;
     interview: public_Interview;
-    readonly [RelationKeys]?: 'answer' | 'interview';
+    submissions: public_CodeSubmission[];
+    readonly [RelationKeys]?: 'answer' | 'interview' | 'submissions';
   };
   export type public_Answer = {
     id: CodecTypes['pg/uuid@1']['output'];
@@ -541,6 +640,33 @@ export namespace Models {
     interview: public_Interview;
     readonly [RelationKeys]?: 'interview';
   };
+  export type public_CodeSubmission = {
+    id: CodecTypes['pg/uuid@1']['output'];
+    interviewId: CodecTypes['pg/uuid@1']['output'];
+    questionId: CodecTypes['pg/uuid@1']['output'];
+    language: CodecTypes['pg/text@1']['output'];
+    sourceCode: CodecTypes['pg/text@1']['output'];
+    status: CodecTypes['pg/text@1']['output'];
+    testsPassed: CodecTypes['pg/int4@1']['output'];
+    totalTests: CodecTypes['pg/int4@1']['output'];
+    executionTimeMs: CodecTypes['pg/int4@1']['output'] | null;
+    memoryKb: CodecTypes['pg/int4@1']['output'] | null;
+    testResults: CodecTypes['pg/json@1']['output'] | null;
+    createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    interview: public_Interview;
+    question: public_Question;
+    readonly [RelationKeys]?: 'interview' | 'question';
+  };
+  export type public_CodingTestCase = {
+    id: CodecTypes['pg/uuid@1']['output'];
+    problemSlug: CodecTypes['pg/text@1']['output'];
+    input: CodecTypes['pg/text@1']['output'];
+    expectedOutput: CodecTypes['pg/text@1']['output'];
+    isHidden: CodecTypes['pg/bool@1']['output'];
+    orderIndex: CodecTypes['pg/int4@1']['output'];
+    createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    readonly [RelationKeys]?: never;
+  };
 }
 
 export declare const models: {
@@ -550,6 +676,8 @@ export declare const models: {
     Answer: Models.public_Answer;
     Evaluation: Models.public_Evaluation;
     EvaluationReport: Models.public_EvaluationReport;
+    CodeSubmission: Models.public_CodeSubmission;
+    CodingTestCase: Models.public_CodingTestCase;
   };
 };
 
@@ -612,6 +740,161 @@ type ContractBase = Omit<
                   };
                 },
               ];
+            };
+            readonly codeSubmission: {
+              columns: {
+                readonly id: {
+                  readonly nativeType: 'uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                };
+                readonly interviewId: {
+                  readonly nativeType: 'uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                };
+                readonly questionId: {
+                  readonly nativeType: 'uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                };
+                readonly language: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly sourceCode: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly status: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly testsPassed: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                };
+                readonly totalTests: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                };
+                readonly executionTimeMs: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                };
+                readonly memoryKb: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                };
+                readonly testResults: {
+                  readonly nativeType: 'json';
+                  readonly codecId: 'pg/json@1';
+                  readonly nullable: true;
+                };
+                readonly createdAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'codeSubmission_interviewId_idx_766b64f2';
+                  readonly prefix: 'codeSubmission_interviewId_idx';
+                  readonly columns: readonly ['interviewId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'codeSubmission_questionId_idx_fdb42076';
+                  readonly prefix: 'codeSubmission_questionId_idx';
+                  readonly columns: readonly ['questionId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'codeSubmission';
+                    readonly columns: readonly ['interviewId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'interview';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'codeSubmission';
+                    readonly columns: readonly ['questionId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'question';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly codingTestCase: {
+              columns: {
+                readonly id: {
+                  readonly nativeType: 'uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                };
+                readonly problemSlug: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly input: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly expectedOutput: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly isHidden: {
+                  readonly nativeType: 'bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                };
+                readonly orderIndex: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                };
+                readonly createdAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [];
+              foreignKeys: readonly [];
             };
             readonly evaluation: {
               columns: {
@@ -874,6 +1157,11 @@ type ContractBase = Omit<
                     readonly value: DefaultLiteralValue<'pg/text@1', 'THEORY'>;
                   };
                 };
+                readonly codingProblemSlug: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
                 readonly createdAt: {
                   readonly nativeType: 'timestamptz';
                   readonly codecId: 'pg/timestamptz-temporal@1';
@@ -955,6 +1243,14 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'EvaluationReport';
     };
+    readonly codeSubmission: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'CodeSubmission';
+    };
+    readonly codingTestCase: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'CodingTestCase';
+    };
   };
   readonly domain: {
     readonly namespaces: {
@@ -1016,6 +1312,154 @@ type ContractBase = Omit<
                 readonly questionId: { readonly column: 'questionId' };
                 readonly answerText: { readonly column: 'answerText' };
                 readonly submittedAt: { readonly column: 'submittedAt' };
+              };
+            };
+          };
+          readonly CodeSubmission: {
+            readonly fields: {
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly interviewId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly questionId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly language: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly sourceCode: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly testsPassed: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly totalTests: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly executionTimeMs: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly memoryKb: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly testResults: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/json@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly interview: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Interview';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['interviewId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly question: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Question';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['questionId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'codeSubmission';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly id: { readonly column: 'id' };
+                readonly interviewId: { readonly column: 'interviewId' };
+                readonly questionId: { readonly column: 'questionId' };
+                readonly language: { readonly column: 'language' };
+                readonly sourceCode: { readonly column: 'sourceCode' };
+                readonly status: { readonly column: 'status' };
+                readonly testsPassed: { readonly column: 'testsPassed' };
+                readonly totalTests: { readonly column: 'totalTests' };
+                readonly executionTimeMs: { readonly column: 'executionTimeMs' };
+                readonly memoryKb: { readonly column: 'memoryKb' };
+                readonly testResults: { readonly column: 'testResults' };
+                readonly createdAt: { readonly column: 'createdAt' };
+              };
+            };
+          };
+          readonly CodingTestCase: {
+            readonly fields: {
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly problemSlug: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly input: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly expectedOutput: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly isHidden: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly orderIndex: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'codingTestCase';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly id: { readonly column: 'id' };
+                readonly problemSlug: { readonly column: 'problemSlug' };
+                readonly input: { readonly column: 'input' };
+                readonly expectedOutput: { readonly column: 'expectedOutput' };
+                readonly isHidden: { readonly column: 'isHidden' };
+                readonly orderIndex: { readonly column: 'orderIndex' };
+                readonly createdAt: { readonly column: 'createdAt' };
               };
             };
           };
@@ -1246,6 +1690,17 @@ type ContractBase = Omit<
               };
             };
             readonly relations: {
+              readonly codeSubmissions: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'CodeSubmission';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['interviewId'];
+                };
+              };
               readonly evaluationReport: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -1307,6 +1762,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly codingProblemSlug: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly createdAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -1347,6 +1806,17 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['id'];
                 };
               };
+              readonly submissions: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'CodeSubmission';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['questionId'];
+                };
+              };
             };
             readonly storage: {
               readonly table: 'question';
@@ -1357,6 +1827,7 @@ type ContractBase = Omit<
                 readonly questionText: { readonly column: 'questionText' };
                 readonly orderIndex: { readonly column: 'orderIndex' };
                 readonly type: { readonly column: 'type' };
+                readonly codingProblemSlug: { readonly column: 'codingProblemSlug' };
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
               };
@@ -1435,6 +1906,22 @@ type ContractBase = Omit<
           readonly ref: {
             readonly namespace: 'public';
             readonly table: 'answer';
+            readonly column: 'id';
+          };
+          readonly onCreate: { readonly kind: 'generator'; readonly id: 'uuidv4' };
+        },
+        {
+          readonly ref: {
+            readonly namespace: 'public';
+            readonly table: 'codeSubmission';
+            readonly column: 'id';
+          };
+          readonly onCreate: { readonly kind: 'generator'; readonly id: 'uuidv4' };
+        },
+        {
+          readonly ref: {
+            readonly namespace: 'public';
+            readonly table: 'codingTestCase';
             readonly column: 'id';
           };
           readonly onCreate: { readonly kind: 'generator'; readonly id: 'uuidv4' };

@@ -36,3 +36,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# private hidden test seeds (never commit)
+private-seeds/
+*.private-test*.json
+apps/api/data/private-hidden-tests.json
+
+# judge0 runner deployment (separate compose project)
+judge0/

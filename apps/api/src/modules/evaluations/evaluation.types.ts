@@ -30,16 +30,27 @@ export interface EvaluationResponse extends EvaluationResult {
   updatedAt: Date | string;
 }
 
-export interface QuestionEvaluationResult extends CriterionScores {
+export interface QuestionEvaluationResult {
   questionId: string;
   questionText: string;
   orderIndex: number;
   candidateAnswer: string;
+  correctnessScore?: number;
+  completenessScore?: number;
+  reasoningScore?: number;
+  clarityScore?: number;
   overallScore: number;
   summary: string;
   strengths: string[];
   improvements: string[];
   sampleAnswer: string;
+  questionType?: 'THEORY' | 'CODING' | 'SYSTEM_DESIGN' | string;
+  submissionStatus?: string;
+  testsPassed?: number;
+  totalTests?: number;
+  language?: string;
+  executionTimeMs?: number;
+  memoryKb?: number;
 }
 
 export interface CrossInterviewAnalysis {
@@ -92,4 +103,3 @@ export interface EvaluationReportResponse {
   createdAt: Date | string;
   updatedAt: Date | string;
 }
-

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { interviewController } from './interview.controller.js';
 import { evaluationController } from '../evaluations/evaluation.controller.js';
+import { codingController } from '../coding/coding.controller.js';
 
 const interviewRouter = Router();
 
@@ -13,5 +14,10 @@ interviewRouter.post('/:interviewId/questions/:questionId/evaluation', evaluatio
 interviewRouter.get('/:interviewId/questions/:questionId/evaluation', evaluationController.getEvaluation);
 interviewRouter.post('/:interviewId/evaluation-report', evaluationController.generateEvaluationReport);
 interviewRouter.get('/:interviewId/evaluation-report', evaluationController.getEvaluationReport);
+
+// Coding Execution Engine Routes
+interviewRouter.get('/:interviewId/questions/:questionId/coding-problem', codingController.getCodingProblem);
+interviewRouter.post('/:interviewId/questions/:questionId/code/run', codingController.runCode);
+interviewRouter.post('/:interviewId/questions/:questionId/code/submit', codingController.submitSolution);
 
 export { interviewRouter };

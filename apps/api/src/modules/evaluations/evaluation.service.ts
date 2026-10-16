@@ -299,13 +299,12 @@ export const evaluationService = {
       throw error;
     }
 
-    // Load questions and answers
+    // Separate theory and coding questions
     const rawQuestions = await db.orm.public.Question
       .where({ interviewId })
       .all();
 
     const questions = rawQuestions.sort((a, b) => a.orderIndex - b.orderIndex);
-
 
     if (questions.length === 0) {
       const error = new Error('No questions found for this interview');
@@ -313,20 +312,45 @@ export const evaluationService = {
       throw error;
     }
 
-    const questionIds = questions.map((q) => q.id);
-    const answers = await db.orm.public.Answer
-      .where((a) => a.questionId.in(questionIds))
-      .all();
+    const theoryQuestions = questions.filter((q) => q.type !== 'CODING');
+    const codingQuestions = questions.filter((q) => q.type === 'CODING');
+
+    // Retrieve theory answers
+    const theoryQuestionIds = theoryQuestions.map((q) => q.id);
+    const answers = theoryQuestionIds.length > 0
+      ? await db.orm.public.Answer.where((a) => a.questionId.in(theoryQuestionIds)).all()
+      : [];
 
     const answersByQuestionId = new Map<string, any>();
     for (const ans of answers) {
       answersByQuestionId.set(ans.questionId, ans);
     }
 
-    // Completion policy check: all questions in the interview must have been answered
-    if (answers.length < interview.questionCount) {
+    // Retrieve coding submissions (scoped to this interview)
+    const codingQuestionIds = codingQuestions.map((q) => q.id);
+    const submissions = codingQuestionIds.length > 0
+      ? await db.orm.public.CodeSubmission.where({ interviewId }).all()
+      : [];
+
+    const latestSubmissionByQuestionId = new Map<string, any>();
+    for (const sub of submissions) {
+      if (codingQuestionIds.includes(sub.questionId)) {
+        const existing = latestSubmissionByQuestionId.get(sub.questionId);
+        if (!existing || new Date(sub.createdAt).getTime() > new Date(existing.createdAt).getTime()) {
+          latestSubmissionByQuestionId.set(sub.questionId, sub);
+        }
+      }
+    }
+
+    // Completion policy check:
+    // Every question in the interview must have been answered (Theory -> Answer, Coding -> CodeSubmission)
+    const totalAnswered = answersByQuestionId.size + latestSubmissionByQuestionId.size;
+    const unansweredTheory = theoryQuestions.filter(q => !answersByQuestionId.has(q.id));
+    const unsubmittedCoding = codingQuestions.filter(q => !latestSubmissionByQuestionId.has(q.id));
+
+    if (unansweredTheory.length > 0 || unsubmittedCoding.length > 0 || totalAnswered < interview.questionCount) {
       const error = new Error(
-        `Interview is not completed. ${answers.length} of ${interview.questionCount} questions have been answered.`
+        `Interview is not completed. ${totalAnswered} of ${interview.questionCount} questions have been answered.`
       );
       (error as any).code = 'BAD_REQUEST';
       throw error;
@@ -380,44 +404,153 @@ export const evaluationService = {
       return formatEvaluationReportResponse(claim.report);
     }
 
-    // Phase 3: Invoke Gemini Batch Evaluator outside the database transaction
-    const batchQuestions = questions.map((q) => {
-      const ans = answersByQuestionId.get(q.id);
+    // Phase 3: Evaluate questions outside the database transaction
+    let evaluatedTheoryQuestions: any[] = [];
+    let crossAnalysis: any = {
+      recurringStrengths: [],
+      weakTopics: [],
+      repeatedErrors: [],
+      recommendations: [],
+      practiceAreas: [],
+    };
+
+    // If theory questions exist, evaluate them using Gemini batch evaluator
+    if (theoryQuestions.length > 0) {
+      const batchQuestions = theoryQuestions.map((q) => {
+        const ans = answersByQuestionId.get(q.id);
+        return {
+          questionId: q.id,
+          orderIndex: q.orderIndex,
+          questionText: q.questionText,
+          answerText: ans ? ans.answerText : '',
+        };
+      });
+
+      try {
+        const aiReport = await aiEvaluatorService.evaluateBatch({
+          interviewId,
+          type: interview.type,
+          difficulty: interview.difficulty,
+          focusArea: interview.focusArea,
+          questions: batchQuestions,
+        });
+        evaluatedTheoryQuestions = aiReport.questions.map(eq => ({
+          ...eq,
+          questionType: 'THEORY',
+        }));
+        if (aiReport.crossInterviewAnalysis) {
+          crossAnalysis = aiReport.crossInterviewAnalysis;
+        }
+      } catch (evalError: any) {
+        const sanitized = sanitizeProviderError(evalError);
+        try {
+          await db.transaction(async (tx) => {
+            await tx.orm.public.EvaluationReport.where({ id: claim.report.id }).update({
+              status: 'FAILED',
+              errorMessage: sanitized.message,
+            });
+          });
+        } catch (dbErr) {
+          console.error('Failed to update evaluation report to FAILED:', dbErr);
+        }
+        const providerError = new Error(sanitized.message);
+        (providerError as any).code = sanitized.code;
+        (providerError as any).statusCode = sanitized.statusCode;
+        throw providerError;
+      }
+    }
+
+    // Format objective results for coding questions (Zero Gemini calls for code execution)
+    const evaluatedCodingQuestions = codingQuestions.map((q) => {
+      const sub = latestSubmissionByQuestionId.get(q.id);
+      const testsPassed = sub?.testsPassed ?? 0;
+      const totalTests = sub?.totalTests ?? 0;
+      const qScore = totalTests > 0 ? Math.round((testsPassed / totalTests) * 100) : 0;
+      const isAccepted = sub?.status === 'Accepted';
+
       return {
         questionId: q.id,
-        orderIndex: q.orderIndex,
         questionText: q.questionText,
-        answerText: ans ? ans.answerText : '',
+        orderIndex: q.orderIndex,
+        candidateAnswer: sub?.sourceCode || '',
+        overallScore: qScore,
+        summary: `Solution submitted in ${(sub?.language || 'code').toUpperCase()}. Status: ${sub?.status || 'NOT_SUBMITTED'}. Passed ${testsPassed} of ${totalTests} test cases.`,
+        strengths: isAccepted
+          ? ['All public and private hidden test cases passed successfully.', 'Correct algorithmic implementation.']
+          : ['Code successfully executed in sandbox environment.'],
+        improvements: isAccepted
+          ? ['Review time and space complexity for further optimization.']
+          : [`Failing test cases detected (${testsPassed}/${totalTests} passed). Status: ${sub?.status || 'Failed'}. Check edge cases and input boundaries.`],
+        sampleAnswer: '',
+        questionType: 'CODING',
+        submissionStatus: sub?.status || 'NOT_SUBMITTED',
+        testsPassed,
+        totalTests,
+        language: sub?.language || '',
+        executionTimeMs: sub?.executionTimeMs ?? undefined,
+        memoryKb: sub?.memoryKb ?? undefined,
       };
     });
 
-    let reportPayload;
-    try {
-      reportPayload = await aiEvaluatorService.evaluateBatch({
-        interviewId,
-        type: interview.type,
-        difficulty: interview.difficulty,
-        focusArea: interview.focusArea,
-        questions: batchQuestions,
-      });
-    } catch (evalError: any) {
-      const sanitized = sanitizeProviderError(evalError);
-      // Mark as FAILED in short DB transaction so it can be retried safely
-      try {
-        await db.transaction(async (tx) => {
-          await tx.orm.public.EvaluationReport.where({ id: claim.report.id }).update({
-            status: 'FAILED',
-            errorMessage: sanitized.message,
-          });
-        });
-      } catch (dbErr) {
-        console.error('Failed to update evaluation report to FAILED:', dbErr);
+    // Merge theory and coding questions, sorted by original orderIndex
+    const allEvaluatedQuestions = [...evaluatedTheoryQuestions, ...evaluatedCodingQuestions]
+      .sort((a, b) => a.orderIndex - b.orderIndex);
+
+    // Calculate consolidated overall score
+    const totalScoreSum = allEvaluatedQuestions.reduce((acc, q) => acc + (q.overallScore || 0), 0);
+    const consolidatedOverallScore = allEvaluatedQuestions.length > 0
+      ? Math.round(totalScoreSum / allEvaluatedQuestions.length)
+      : 0;
+
+    // Performance level mapping
+    const getPerformanceLevel = (score: number): 'Expert' | 'Advanced' | 'Proficient' | 'Developing' | 'Needs Foundation' => {
+      if (score >= 90) return 'Expert';
+      if (score >= 80) return 'Advanced';
+      if (score >= 65) return 'Proficient';
+      if (score >= 50) return 'Developing';
+      return 'Needs Foundation';
+    };
+
+    const performanceLevel = getPerformanceLevel(consolidatedOverallScore);
+
+    // Cross-analysis augmentation for coding
+    if (codingQuestions.length > 0) {
+      if (evaluatedCodingQuestions.every(c => c.submissionStatus === 'Accepted')) {
+        crossAnalysis.recurringStrengths = [
+          ...crossAnalysis.recurringStrengths,
+          'Consistent algorithmic accuracy and edge case handling across coding challenges.',
+        ];
       }
-      const providerError = new Error(sanitized.message);
-      (providerError as any).code = sanitized.code;
-      (providerError as any).statusCode = sanitized.statusCode;
-      throw providerError;
+      if (evaluatedCodingQuestions.some(c => c.submissionStatus !== 'Accepted')) {
+        crossAnalysis.recommendations = [
+          ...crossAnalysis.recommendations,
+          'Strengthen edge-case reasoning and boundary validation during coding problems.',
+        ];
+      }
+      if (!crossAnalysis.practiceAreas.includes('Algorithms & Data Structures')) {
+        crossAnalysis.practiceAreas.push('Algorithms & Data Structures');
+      }
     }
+
+    const summary = theoryQuestions.length === 0
+      ? `Coding assessment completed. ${evaluatedCodingQuestions.filter(c => c.submissionStatus === 'Accepted').length} of ${codingQuestions.length} coding challenges passed all test cases.`
+      : codingQuestions.length === 0
+      ? `Interview evaluation completed across ${theoryQuestions.length} technical questions.`
+      : `Mixed interview evaluation completed across ${theoryQuestions.length} theory questions and ${codingQuestions.length} coding challenges.`;
+
+    const reportPayload = {
+      interviewId,
+      type: interview.type,
+      difficulty: interview.difficulty,
+      focusArea: interview.focusArea,
+      overallScore: consolidatedOverallScore,
+      performanceLevel,
+      questionsAnswered: totalAnswered,
+      questionsEvaluated: allEvaluatedQuestions.length,
+      summary,
+      questions: allEvaluatedQuestions,
+      crossInterviewAnalysis: crossAnalysis,
+    };
 
     // Phase 4: Persist completed report and sync per-answer evaluations in a short DB transaction
     const completed = await db.transaction(async (tx) => {
@@ -431,9 +564,8 @@ export const evaluationService = {
         errorMessage: null,
       });
 
-
-      // Synchronize per-question evaluation records in Evaluation table
-      for (const eq of reportPayload.questions) {
+      // Synchronize per-question evaluation records in Evaluation table (Theory answers only)
+      for (const eq of evaluatedTheoryQuestions) {
         const ans = answersByQuestionId.get(eq.questionId);
         if (ans) {
           const existingEval = await tx.orm.public.Evaluation.where({ answerId: ans.id }).first();

@@ -8,6 +8,14 @@
       "model": "Answer",
       "namespace": "public"
     },
+    "codeSubmission": {
+      "model": "CodeSubmission",
+      "namespace": "public"
+    },
+    "codingTestCase": {
+      "model": "CodingTestCase",
+      "namespace": "public"
+    },
     "evaluation": {
       "model": "Evaluation",
       "namespace": "public"
@@ -198,6 +206,251 @@
               },
               "namespaceId": "public",
               "table": "answer"
+            }
+          },
+          "CodeSubmission": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "kind": "scalar"
+                }
+              },
+              "executionTimeMs": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "interviewId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "language": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "memoryKb": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "questionId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "sourceCode": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "testResults": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/json@1",
+                  "kind": "scalar"
+                }
+              },
+              "testsPassed": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "totalTests": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "interview": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "interviewId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Interview",
+                  "namespace": "public"
+                }
+              },
+              "question": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "questionId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Question",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "executionTimeMs": {
+                  "column": "executionTimeMs"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "interviewId": {
+                  "column": "interviewId"
+                },
+                "language": {
+                  "column": "language"
+                },
+                "memoryKb": {
+                  "column": "memoryKb"
+                },
+                "questionId": {
+                  "column": "questionId"
+                },
+                "sourceCode": {
+                  "column": "sourceCode"
+                },
+                "status": {
+                  "column": "status"
+                },
+                "testResults": {
+                  "column": "testResults"
+                },
+                "testsPassed": {
+                  "column": "testsPassed"
+                },
+                "totalTests": {
+                  "column": "totalTests"
+                }
+              },
+              "namespaceId": "public",
+              "table": "codeSubmission"
+            }
+          },
+          "CodingTestCase": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "kind": "scalar"
+                }
+              },
+              "expectedOutput": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "input": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "isHidden": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "orderIndex": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "problemSlug": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "expectedOutput": {
+                  "column": "expectedOutput"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "input": {
+                  "column": "input"
+                },
+                "isHidden": {
+                  "column": "isHidden"
+                },
+                "orderIndex": {
+                  "column": "orderIndex"
+                },
+                "problemSlug": {
+                  "column": "problemSlug"
+                }
+              },
+              "namespaceId": "public",
+              "table": "codingTestCase"
             }
           },
           "Evaluation": {
@@ -596,6 +849,21 @@
               }
             },
             "relations": {
+              "codeSubmissions": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "interviewId"
+                  ]
+                },
+                "to": {
+                  "model": "CodeSubmission",
+                  "namespace": "public"
+                }
+              },
               "evaluationReport": {
                 "cardinality": "1:1",
                 "nullable": true,
@@ -661,6 +929,13 @@
           },
           "Question": {
             "fields": {
+              "codingProblemSlug": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "createdAt": {
                 "nullable": false,
                 "type": {
@@ -749,10 +1024,28 @@
                   "model": "Interview",
                   "namespace": "public"
                 }
+              },
+              "submissions": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "questionId"
+                  ]
+                },
+                "to": {
+                  "model": "CodeSubmission",
+                  "namespace": "public"
+                }
               }
             },
             "storage": {
               "fields": {
+                "codingProblemSlug": {
+                  "column": "codingProblemSlug"
+                },
                 "createdAt": {
                   "column": "createdAt"
                 },
@@ -846,6 +1139,187 @@
                   ]
                 }
               ]
+            },
+            "codeSubmission": {
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "executionTimeMs": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": true
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "interviewId": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "language": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "memoryKb": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": true
+                },
+                "questionId": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "sourceCode": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "testResults": {
+                  "codecId": "pg/json@1",
+                  "nativeType": "json",
+                  "nullable": true
+                },
+                "testsPassed": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "totalTests": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "source": {
+                    "columns": [
+                      "interviewId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "codeSubmission"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "interview"
+                  }
+                },
+                {
+                  "source": {
+                    "columns": [
+                      "questionId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "codeSubmission"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "question"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "interviewId"
+                  ],
+                  "name": "codeSubmission_interviewId_idx_766b64f2",
+                  "prefix": "codeSubmission_interviewId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "questionId"
+                  ],
+                  "name": "codeSubmission_questionId_idx_fdb42076",
+                  "prefix": "codeSubmission_questionId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "codingTestCase": {
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "expectedOutput": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "input": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "isHidden": {
+                  "codecId": "pg/bool@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nativeType": "bool",
+                  "nullable": false
+                },
+                "orderIndex": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "problemSlug": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
             },
             "evaluation": {
               "checks": [
@@ -1188,6 +1662,11 @@
                 }
               ],
               "columns": {
+                "codingProblemSlug": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
                 "createdAt": {
                   "codecId": "pg/timestamptz-temporal@1",
                   "default": {
@@ -1321,10 +1800,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "08cb7a5b092eb7e8b2776a2ff29671bc5037a32ba2a07b4b8b0cb363c9f929b8"
+    "storageHash": "0e038f1a2c53628e5a939510286cf176b89e6a2a22376bee2b5c9c18db6b3854"
   },
   "execution": {
-    "executionHash": "685caf5cd36fd558e5b5ec51869330d9c0cb86ef11ad72c915c7bcd3ab53dbbc",
+    "executionHash": "e43e660672a1d51296207199f4df34f890fc97e355e2d3d074940cfff782b678",
     "mutations": {
       "defaults": [
         {
@@ -1336,6 +1815,28 @@
             "column": "id",
             "namespace": "public",
             "table": "answer"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "id",
+            "namespace": "public",
+            "table": "codeSubmission"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "id",
+            "namespace": "public",
+            "table": "codingTestCase"
           }
         },
         {

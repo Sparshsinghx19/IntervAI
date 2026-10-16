@@ -29,6 +29,7 @@ model Interview {
   updatedAt        temporal.updatedAt()
   questions        Question[]
   evaluationReport EvaluationReport?
+  codeSubmissions  CodeSubmission[]
 }
 
 enum QuestionType {
@@ -38,15 +39,17 @@ enum QuestionType {
 }
 
 model Question {
-  id           Uuid         @id @default(uuid())
-  interviewId  Uuid
-  interview    Interview    @relation(fields: [interviewId], references: [id])
-  questionText String
-  orderIndex   Int
-  type         QuestionType @default(THEORY)
-  createdAt    DateTime     @default(now())
-  updatedAt    temporal.updatedAt()
-  answer       Answer?
+  id                Uuid             @id @default(uuid())
+  interviewId       Uuid
+  interview         Interview        @relation(fields: [interviewId], references: [id])
+  questionText      String
+  orderIndex        Int
+  type              QuestionType     @default(THEORY)
+  codingProblemSlug String?
+  createdAt         DateTime         @default(now())
+  updatedAt         temporal.updatedAt()
+  answer            Answer?
+  submissions       CodeSubmission[]
 }
 
 enum EvaluationStatus {
@@ -95,4 +98,31 @@ model EvaluationReport {
   errorMessage       String?
   createdAt          DateTime         @default(now())
   updatedAt          temporal.updatedAt()
+}
+
+model CodeSubmission {
+  id              Uuid      @id @default(uuid())
+  interviewId     Uuid
+  interview       Interview @relation(fields: [interviewId], references: [id])
+  questionId      Uuid
+  question        Question  @relation(fields: [questionId], references: [id])
+  language        String
+  sourceCode      String
+  status          String
+  testsPassed     Int
+  totalTests      Int
+  executionTimeMs Int?
+  memoryKb        Int?
+  testResults     Json?
+  createdAt       DateTime  @default(now())
+}
+
+model CodingTestCase {
+  id             Uuid     @id @default(uuid())
+  problemSlug    String
+  input          String
+  expectedOutput String
+  isHidden       Boolean  @default(false)
+  orderIndex     Int
+  createdAt      DateTime @default(now())
 }
