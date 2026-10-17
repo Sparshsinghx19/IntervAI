@@ -2,64 +2,55 @@ import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-export function CoachPlatform() {
+interface CoachPlatformProps {
+  shadowTexture: THREE.Texture;
+  reducedMotion: boolean;
+}
+
+/** Restrained holographic base: two slow counter-rotating rings, a soft glow and a contact shadow. */
+export function CoachPlatform({ shadowTexture, reducedMotion }: CoachPlatformProps) {
   const innerRingRef = useRef<THREE.Group>(null);
   const outerRingRef = useRef<THREE.Group>(null);
 
-  useFrame((state, delta) => {
-    if (innerRingRef.current) innerRingRef.current.rotation.z -= delta * 0.8;
-    if (outerRingRef.current) outerRingRef.current.rotation.z += delta * 0.4;
+  useFrame((_, delta) => {
+    if (reducedMotion) return;
+    const dt = Math.min(delta, 0.1);
+    if (innerRingRef.current) innerRingRef.current.rotation.z -= dt * 0.35;
+    if (outerRingRef.current) outerRingRef.current.rotation.z += dt * 0.18;
   });
 
   return (
-    <group position={[0, -2.5, 0]}>
-      
-      {/* 1. THE VERTICAL ENERGY TETHER (Connecting platform to Coach) */}
-      <group position={[0, 1.25, 0]}>
-        {/* Inner solid beam */}
-        <mesh>
-          <cylinderGeometry args={[0.02, 0.02, 2.5, 16]} />
-          <meshBasicMaterial color="#ffffff" transparent opacity={0.2} blending={THREE.AdditiveBlending} />
-        </mesh>
-        {/* Outer soft glow beam */}
-        <mesh>
-          <cylinderGeometry args={[0.08, 0.08, 2.5, 16]} />
-          <meshBasicMaterial color="#8b5cf6" transparent opacity={0.1} blending={THREE.AdditiveBlending} />
-        </mesh>
-      </group>
-
-      {/* 2. HOLOGRAPHIC BASE RINGS */}
+    <group position={[0, -1.5, 0]}>
       <group rotation={[-Math.PI / 2, 0, 0]}>
-        {/* Inner Glowing Ring */}
+        {/* Contact shadow under the boots */}
+        <mesh position={[0, 0, 0.002]} scale={[1.7, 1.15, 1]}>
+          <planeGeometry args={[1, 1]} />
+          <meshBasicMaterial map={shadowTexture} transparent opacity={0.75} depthWrite={false} />
+        </mesh>
+
         <group ref={innerRingRef}>
           <mesh>
-            <ringGeometry args={[1.2, 1.25, 64]} />
-            <meshBasicMaterial color="#22d3ee" transparent opacity={0.6} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} />
+            <ringGeometry args={[1.0, 1.025, 96]} />
+            <meshBasicMaterial color="#06b6d4" transparent opacity={0.55} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} depthWrite={false} />
           </mesh>
         </group>
-        
-        {/* Outer segmented ring simulation */}
+
         <group ref={outerRingRef}>
           <mesh>
-            <ringGeometry args={[1.8, 1.82, 64, 1, 0, Math.PI * 1.5]} />
-            <meshBasicMaterial color="#8b5cf6" transparent opacity={0.4} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} />
+            <ringGeometry args={[1.32, 1.345, 96, 1, 0, Math.PI * 1.5]} />
+            <meshBasicMaterial color="#8b5cf6" transparent opacity={0.4} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} depthWrite={false} />
           </mesh>
           <mesh>
-            <ringGeometry args={[1.8, 1.82, 64, 1, Math.PI * 1.6, Math.PI * 0.3]} />
-            <meshBasicMaterial color="#8b5cf6" transparent opacity={0.6} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} />
+            <ringGeometry args={[1.32, 1.345, 64, 1, Math.PI * 1.6, Math.PI * 0.3]} />
+            <meshBasicMaterial color="#8b5cf6" transparent opacity={0.6} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} depthWrite={false} />
           </mesh>
         </group>
 
-        {/* Base Glow Plate */}
-        <mesh position={[0, 0, -0.05]}>
-          <circleGeometry args={[1.8, 64]} />
-          <meshBasicMaterial color="#8b5cf6" transparent opacity={0.05} />
+        <mesh position={[0, 0, -0.01]}>
+          <circleGeometry args={[1.32, 64]} />
+          <meshBasicMaterial color="#8b5cf6" transparent opacity={0.05} depthWrite={false} />
         </mesh>
-
-        {/* Up-light emitting from the platform onto the Coach */}
-        <pointLight position={[0, 0, 0.5]} intensity={20} color="#22d3ee" distance={10} decay={2} />
       </group>
-      
     </group>
   );
 }

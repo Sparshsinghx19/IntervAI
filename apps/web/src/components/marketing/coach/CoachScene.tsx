@@ -1,27 +1,46 @@
+import { type MutableRefObject } from 'react';
+import { useThree } from '@react-three/fiber';
+import { PresentationControls } from '@react-three/drei';
 import { CoachPlatform } from './CoachPlatform';
 import { CoachLights } from './CoachLights';
 import { CoachBody } from './CoachBody';
-import { Float, PresentationControls, Environment } from '@react-three/drei';
+import { useCoachAssets } from './useCoachAssets';
+import type { CoachPointer } from './types';
 
-export function CoachScene() {
+interface CoachSceneProps {
+  pointer: MutableRefObject<CoachPointer>;
+  reducedMotion: boolean;
+  lowPower: boolean;
+  allowDrag: boolean;
+}
+
+// Approximate world-space extents of robot + platform, used to fit narrow viewports.
+const FIT_WIDTH = 2.9;
+
+export function CoachScene({ pointer, reducedMotion, lowPower, allowDrag }: CoachSceneProps) {
+  const { geometries, materials, shadowTexture } = useCoachAssets(lowPower ? 'low' : 'high');
+  const viewport = useThree((s) => s.viewport);
+
+  // Keep the whole character in frame on narrow (mobile) canvases.
+  const fit = Math.min(1, viewport.width / FIT_WIDTH);
+
   return (
     <>
       <CoachLights />
-      
-      {/* Allows user to gently inspect the 3D volume, breaking the flat 2D silhouette */}
-      <PresentationControls 
-        global 
-        snap
-        rotation={[0, 0.15, 0]} 
-        polar={[-Math.PI / 8, Math.PI / 8]} 
-        azimuth={[-Math.PI / 4, Math.PI / 4]}
-      >
-        <Float speed={2.5} rotationIntensity={0.15} floatIntensity={0.4} floatingRange={[-0.08, 0.08]}>
-          <CoachBody />
-        </Float>
-      </PresentationControls>
-      
-      <CoachPlatform />
+      <group scale={fit} position={[0, -0.05, 0]}>
+        {/* Gentle drag-to-inspect that springs back to the front view */}
+        <PresentationControls
+          global
+          enabled={allowDrag}
+          snap
+          rotation={[0, 0, 0]}
+          polar={[-Math.PI / 14, Math.PI / 14]}
+          azimuth={[-Math.PI / 4, Math.PI / 4]}
+        >
+          <CoachBody geometries={geometries} materials={materials} pointer={pointer} reducedMotion={reducedMotion} />
+        </PresentationControls>
+        <CoachPlatform shadowTexture={shadowTexture} reducedMotion={reducedMotion} />
+      </group>
     </>
   );
 }
