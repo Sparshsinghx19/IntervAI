@@ -1,12 +1,10 @@
 'use client';
 
-import { motion, useReducedMotion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import { Mic, BrainCircuit, Activity, TrendingUp, MessageSquare, Zap, Layers } from "lucide-react";
 import dynamic from "next/dynamic";
+import { motion } from "framer-motion";
+import { Check } from "lucide-react";
 import { CoachLoader } from "@/components/marketing/coach/CoachFallback";
+import { PrimaryLink, SecondaryLink, container } from "@/components/marketing/primitives";
 
 // three.js is client-only and heavy: load the 3D coach in its own chunk.
 const ThreeCoach = dynamic(
@@ -14,171 +12,109 @@ const ThreeCoach = dynamic(
   { ssr: false, loading: () => <CoachLoader /> }
 );
 
+const FACTS = [
+  { value: "3 tracks", detail: "Technical, behavioral, HR" },
+  { value: "6 focus areas", detail: "From DSA to system design" },
+  { value: "C++ · Python", detail: "Run live in a sandbox" },
+];
+
+const ease = [0.16, 1, 0.3, 1] as const;
+
 export function Hero() {
-  const shouldReduceMotion = useReducedMotion();
-
-  // Premium continuous motions
-  const float1: any = shouldReduceMotion ? {} : { y: [0, -10, 0], transition: { duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0 } };
-  const float2: any = shouldReduceMotion ? {} : { y: [0, -12, 0], transition: { duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1.5 } };
-  const float3: any = shouldReduceMotion ? {} : { y: [0, -8, 0], transition: { duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 2 } };
-
   return (
-    <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden">
-      <div className="absolute inset-0 bg-grid-pattern opacity-50 pointer-events-none" />
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[800px] bg-glow-gradient pointer-events-none opacity-80" />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="text-center max-w-3xl mx-auto mb-20">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          >
-            <Badge variant="outline" className="mb-6 py-1.5 px-4 text-sm border-brand-500/30 bg-brand-500/10 text-brand-300">
-              Introducing your intelligent AI coach
-            </Badge>
-            <h1 className="text-5xl md:text-7xl font-extrabold text-white tracking-tight mb-8 leading-[1.1]">
-              Master the Interview.<br/>
-              <span className="text-gradient-brand">Powered by AI.</span>
-            </h1>
-            <p className="text-lg md:text-xl text-slate-400 mb-10 leading-relaxed">
-              Practice technical and behavioral interviews with an adaptive AI coach. Get real-time feedback, identify weak points, and become interview-ready faster.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Button variant="glow" size="lg" className="w-full sm:w-auto transition-transform hover:scale-105 active:scale-95 duration-300">
-                Start Practicing Free
-              </Button>
-              <Button variant="outline" size="lg" className="w-full sm:w-auto transition-transform hover:scale-105 active:scale-95 duration-300">
-                Watch Demo
-              </Button>
-            </div>
-          </motion.div>
-        </div>
+    <section className="relative overflow-hidden pt-28 pb-12 md:pt-32 lg:pb-20">
+      {/* Grid that fades out toward the edges, plus two quiet light sources */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-grid-pattern [mask-image:radial-gradient(ellipse_70%_60%_at_60%_40%,black,transparent)]"
+      />
+      <div aria-hidden className="pointer-events-none absolute right-[-10%] top-[8%] h-[640px] w-[640px] rounded-full bg-brand-600/20 blur-[140px]" />
+      <div aria-hidden className="pointer-events-none absolute right-[18%] bottom-[-12%] h-[320px] w-[420px] rounded-full bg-cyan-500/10 blur-[120px]" />
 
-        {/* Hero Visual Mockup */}
-        <div className="relative max-w-5xl mx-auto mt-12 flex flex-col items-center">
-          
-          {/* AI COACH VISUAL LAYER */}
-          <div className="relative w-full h-[450px] lg:h-[540px] flex items-center justify-center mb-4 z-20">
-            
-            <ThreeCoach />
+      <div className={`${container} relative grid grid-cols-[minmax(0,1fr)] items-center gap-6 lg:min-h-[min(calc(100svh-8rem),760px)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.02fr)] lg:gap-4`}>
+        {/* Copy */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease }}
+          className="relative z-10 max-w-xl"
+        >
+          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-brand-300/80 sm:tracking-[0.2em]">
+            Mock interviews · Coding · Scored feedback
+          </p>
+          <h1 className="mt-6 text-balance text-[2.6rem] font-semibold leading-[1.02] tracking-[-0.035em] text-white sm:text-6xl lg:text-[4.25rem]">
+            Practise the <span className="text-gradient-brand">hard parts</span> of the interview.
+          </h1>
+          <p className="mt-6 max-w-[32rem] text-pretty text-lg leading-relaxed text-slate-400">
+            Choose a track and a topic. Answer real interview questions, solve coding problems in the browser, then get a
+            scored report on what to fix next.
+          </p>
 
-            {/* FLOATING METRIC CARDS */}
-            {/* Card 1: Score Trend */}
-            <motion.div className="absolute top-8 left-4 lg:left-12 xl:left-0 z-30 hidden md:flex" animate={float1} initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }}>
-              <Card className="p-4 bg-obsidian/90 border-brand-500/30 backdrop-blur-md shadow-2xl flex items-center gap-4 group hover:border-brand-500/60 transition-colors">
-                <div className="p-2 bg-brand-500/20 rounded-lg text-brand-400 group-hover:scale-110 transition-transform"><TrendingUp className="w-5 h-5"/></div>
-                <div><p className="text-xs text-slate-400">Score Trend</p><p className="text-lg font-bold text-white">+18%</p></div>
-              </Card>
-            </motion.div>
+          <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+            <PrimaryLink href="/interview">Start a practice interview</PrimaryLink>
+            <SecondaryLink href="#feedback">See a sample report</SecondaryLink>
+          </div>
+          <p className="mt-4 text-sm text-slate-500">No account needed. Setting up a session takes four choices.</p>
 
-            {/* Card 2: Tech Accuracy */}
-            <motion.div className="absolute top-1/2 -translate-y-1/2 -left-4 lg:-left-12 xl:-left-16 z-30 hidden md:flex" animate={float2} initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.2 }}>
-              <Card className="p-4 bg-obsidian/90 border-cyan-500/30 backdrop-blur-md shadow-2xl flex items-center gap-4 group hover:border-cyan-500/60 transition-colors">
-                <div className="relative w-12 h-12 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <svg className="w-full h-full transform -rotate-90">
-                    <circle cx="24" cy="24" r="20" stroke="rgba(255,255,255,0.1)" strokeWidth="4" fill="none" />
-                    <circle cx="24" cy="24" r="20" stroke="#06b6d4" strokeWidth="4" fill="none" strokeDasharray="125" strokeDashoffset="10" strokeLinecap="round" />
-                  </svg>
-                  <span className="absolute text-xs font-bold text-white">92%</span>
-                </div>
-                <div><p className="text-xs text-slate-400">Technical<br/>Accuracy</p></div>
-              </Card>
-            </motion.div>
+          <dl className="mt-10 grid max-w-lg gap-2.5 border-t border-white/[0.08] pt-6 sm:mt-12 sm:grid-cols-3 sm:gap-0 sm:divide-x sm:divide-white/[0.08]">
+            {FACTS.map((fact) => (
+              <div key={fact.value} className="flex items-baseline gap-2 sm:block sm:px-4 sm:first:pl-0 sm:last:pr-0">
+                <dt className="text-[15px] font-medium text-white">{fact.value}</dt>
+                <dd className="text-[13px] leading-snug text-slate-500 sm:mt-1">{fact.detail}</dd>
+              </div>
+            ))}
+          </dl>
+        </motion.div>
 
-            {/* Card 3: Weak Topic */}
-            <motion.div className="absolute bottom-16 left-8 lg:left-16 xl:left-8 z-30 hidden md:block" animate={float3} initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.4 }}>
-              <Card className="p-4 bg-obsidian/90 border-amber-500/30 backdrop-blur-md shadow-2xl w-48 group hover:border-amber-500/60 transition-colors">
-                <p className="text-xs text-slate-400 mb-1">Weak Topic</p>
-                <div className="flex justify-between items-center mb-2"><span className="text-sm font-semibold text-white">Graphs</span><span className="text-sm text-amber-400 font-bold">62%</span></div>
-                <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                  <div className="h-full bg-amber-400 rounded-full w-[62%] group-hover:opacity-80 transition-opacity" />
-                </div>
-              </Card>
-            </motion.div>
-
-            {/* Card 4: Communication */}
-            <motion.div className="absolute top-12 right-4 lg:right-12 xl:right-0 z-30 hidden md:flex" animate={float3} initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.1 }}>
-              <Card className="p-4 bg-obsidian/90 border-cyan-500/30 backdrop-blur-md shadow-2xl flex items-center gap-4 group hover:border-cyan-500/60 transition-colors">
-                <div className="p-2 bg-cyan-500/20 rounded-lg text-cyan-400 group-hover:scale-110 transition-transform"><MessageSquare className="w-5 h-5"/></div>
-                <div><p className="text-xs text-slate-400">Communication</p><p className="text-lg font-bold text-white">84%</p></div>
-              </Card>
-            </motion.div>
-
-            {/* Card 5: Adaptive Difficulty */}
-            <motion.div className="absolute top-1/2 -translate-y-1/2 -right-4 lg:-right-12 xl:-right-16 z-30 hidden md:flex" animate={float1} initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.3 }}>
-              <Card className="p-4 bg-obsidian/90 border-brand-500/30 backdrop-blur-md shadow-2xl flex items-center gap-4 group hover:border-brand-500/60 transition-colors">
-                <div className="p-2 bg-brand-500/20 rounded-lg text-brand-400 group-hover:scale-110 transition-transform"><Zap className="w-5 h-5"/></div>
-                <div><p className="text-xs text-slate-400">Adaptive Difficulty</p><p className="text-sm font-bold text-brand-400">Increasing ↑</p></div>
-              </Card>
-            </motion.div>
-
-            {/* Card 6: Next Question */}
-            <motion.div className="absolute bottom-12 right-8 lg:right-16 xl:right-8 z-30 hidden md:flex" animate={float2} initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.5 }}>
-              <Card className="p-4 bg-obsidian/90 border-white/20 backdrop-blur-md shadow-2xl flex items-center gap-4 group hover:border-white/40 transition-colors">
-                <div className="p-2 bg-white/10 rounded-lg text-white group-hover:scale-110 transition-transform"><Layers className="w-5 h-5"/></div>
-                <div><p className="text-xs text-slate-400">Next Question</p><p className="text-sm font-bold text-white">System Design</p></div>
-              </Card>
-            </motion.div>
+        {/* Coach */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1.2, delay: 0.15, ease }}
+          className="relative mx-auto w-full max-w-[600px]"
+        >
+          {/* Fixed-height slot so the loader and canvas never shift the layout */}
+          <div className="relative h-[380px] sm:h-[460px] lg:h-[600px]">
+            <ThreeCoach className="h-full" />
           </div>
 
-          {/* Connection Line */}
-          <div className="w-px h-16 bg-gradient-to-b from-brand-500 to-transparent -mt-8 relative z-10 animate-pulse-glow" />
-
-          {/* EXISTING INTERVIEW UI PANEL */}
-          <motion.div 
-            initial={{ opacity: 0, y: 40 }}
+          {/* Two labelled sample read-outs beside the legs, where the silhouette is narrowest, so they never cover the coach */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className="relative z-20 w-full max-w-4xl"
+            transition={{ duration: 0.7, delay: 0.7, ease }}
+            className="pointer-events-none absolute left-0 top-[77%] hidden w-[176px] rounded-xl border border-white/10 bg-obsidian/90 p-3.5 backdrop-blur-md sm:block"
           >
-            <Card className="glass-card-strong relative border-white/20 p-0 overflow-hidden shadow-[0_20px_60px_-15px_rgba(0,0,0,0.8)]">
-              <div className="border-b border-white/10 p-4 flex items-center justify-between bg-white/[0.02]">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-brand-500/20 flex items-center justify-center border border-brand-500/30">
-                    <BrainCircuit className="w-5 h-5 text-brand-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-white">System Design Interview</h3>
-                    <p className="text-xs text-slate-400">Senior Backend Engineer</p>
-                  </div>
-                </div>
-                <Badge variant="success">Adaptive Mode Active</Badge>
-              </div>
-              
-              <div className="p-8 pb-12 flex flex-col gap-6 relative">
-                <div className="absolute left-12 top-[80px] bottom-16 w-px bg-gradient-to-b from-brand-500/50 to-cyan-500/10" />
-                
-                <div className="max-w-2xl pl-10 relative">
-                  <div className="absolute left-[-5px] top-2 w-2.5 h-2.5 rounded-full bg-brand-500 shadow-glow" />
-                  <p className="text-sm text-brand-400 font-medium mb-2">IntervAI Coach</p>
-                  <h4 className="text-xl md:text-2xl text-white font-medium leading-relaxed">
-                    "How would you approach designing a rate limiter for a distributed API that receives millions of requests per second?"
-                  </h4>
-                </div>
-                
-                <div className="mt-8 flex items-center gap-4 pl-10 relative">
-                  <div className="absolute left-[-4px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-cyan-500 shadow-glow-cyan" />
-                  <div className="flex-1 glass-card rounded-xl p-4 flex items-center gap-3 border-brand-500/30 bg-brand-500/10">
-                    <div className="w-8 h-8 rounded-full bg-brand-500 flex items-center justify-center shadow-glow">
-                      <Mic className="w-4 h-4 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
-                        <motion.div 
-                          className="h-full bg-brand-500" 
-                          animate={{ width: ["30%", "60%", "40%"] }} 
-                          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                        />
-                      </div>
-                    </div>
-                    <span className="text-xs font-mono text-brand-300">Listening...</span>
-                  </div>
-                </div>
-              </div>
-            </Card>
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-slate-500">Sample · Run code</p>
+            <p className="mt-2 text-sm font-medium text-white">Valid Palindrome</p>
+            <p className="mt-1.5 flex items-center gap-1.5 text-[13px] text-cyan-300">
+              <Check aria-hidden className="h-3.5 w-3.5" /> 3 / 3 sample tests passed
+            </p>
           </motion.div>
-        </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.85, ease }}
+            className="pointer-events-none absolute right-0 top-[71%] hidden w-[176px] rounded-xl border border-white/10 bg-obsidian/90 p-3.5 backdrop-blur-md sm:block"
+          >
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-slate-500">Sample report</p>
+            {[
+              { label: "Correctness", score: 85 },
+              { label: "Clarity", score: 70 },
+            ].map((row) => (
+              <div key={row.label} className="mt-2.5">
+                <div className="flex justify-between text-[12px]">
+                  <span className="text-slate-400">{row.label}</span>
+                  <span className="font-mono text-white">{row.score}</span>
+                </div>
+                <div className="mt-1 h-1 rounded-full bg-white/[0.08]">
+                  <div className="h-full rounded-full bg-brand-400" style={{ width: `${row.score}%` }} />
+                </div>
+              </div>
+            ))}
+          </motion.div>
+        </motion.div>
       </div>
     </section>
   );

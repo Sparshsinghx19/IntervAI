@@ -1,23 +1,41 @@
+import Link from "next/link";
+
+const LINKS = [
+  { href: "/interview", label: "Start practising" },
+  { href: "#session", label: "How it works" },
+  { href: "#coding", label: "Coding workspace" },
+  { href: "#feedback", label: "Feedback" },
+];
+
 export function Footer() {
   return (
-    <footer className="border-t border-white/10 bg-obsidian py-12 mt-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded bg-brand-500 flex items-center justify-center">
-            <span className="text-white font-bold text-xs">IV</span>
+    <footer className="border-t border-white/[0.07] bg-obsidian">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-5 py-12 sm:px-8 md:flex-row md:items-center md:justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <div className="flex h-6 w-6 items-center justify-center rounded bg-gradient-to-br from-brand-500 to-cyan-500">
+              <span className="text-xs font-bold text-white">IV</span>
+            </div>
+            <span className="text-lg font-bold tracking-tight text-white">IntervAI</span>
           </div>
-          <span className="text-lg font-bold text-white tracking-tight">IntervAI</span>
+          <p className="mt-3 text-sm text-slate-500">Interview practice with scored feedback.</p>
         </div>
-        
-        <div className="flex gap-6 text-sm text-slate-400">
-          <a href="#" className="hover:text-white transition-colors">Privacy</a>
-          <a href="#" className="hover:text-white transition-colors">Terms</a>
-          <a href="#" className="hover:text-white transition-colors">Contact</a>
-        </div>
-        
-        <div className="text-sm text-slate-500">
-          © {new Date().getFullYear()} IntervAI. All rights reserved.
-        </div>
+
+        <nav aria-label="Footer" className="-my-2 flex flex-wrap gap-x-6 text-sm text-slate-400">
+          {LINKS.map((link) =>
+            link.href.startsWith("/") ? (
+              <Link key={link.href} href={link.href} className="py-2.5 transition-colors hover:text-white">
+                {link.label}
+              </Link>
+            ) : (
+              <a key={link.href} href={link.href} className="py-2.5 transition-colors hover:text-white">
+                {link.label}
+              </a>
+            ),
+          )}
+        </nav>
+
+        <p className="text-sm text-slate-600">© {new Date().getFullYear()} IntervAI</p>
       </div>
     </footer>
   );
