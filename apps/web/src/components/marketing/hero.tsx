@@ -5,9 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Mic, BrainCircuit, Activity, TrendingUp, MessageSquare, Zap, Layers } from "lucide-react";
-import { ThreeCoach } from "@/components/marketing/coach/ThreeCoach";
+import dynamic from "next/dynamic";
+import { CoachLoader } from "@/components/marketing/coach/CoachFallback";
 
-const USE_THREE_PROTOTYPE = true;
+// three.js is client-only and heavy: load the 3D coach in its own chunk.
+const ThreeCoach = dynamic(
+  () => import("@/components/marketing/coach/ThreeCoach").then((m) => m.ThreeCoach),
+  { ssr: false, loading: () => <CoachLoader /> }
+);
 
 export function Hero() {
   const shouldReduceMotion = useReducedMotion();
@@ -16,11 +21,6 @@ export function Hero() {
   const float1: any = shouldReduceMotion ? {} : { y: [0, -10, 0], transition: { duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0 } };
   const float2: any = shouldReduceMotion ? {} : { y: [0, -12, 0], transition: { duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1.5 } };
   const float3: any = shouldReduceMotion ? {} : { y: [0, -8, 0], transition: { duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 2 } };
-  
-  const breatheAnimation: any = shouldReduceMotion ? {} : {
-    y: [0, -15, 0],
-    transition: { duration: 6, repeat: Infinity, ease: "easeInOut" }
-  };
 
   return (
     <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden">
@@ -59,53 +59,9 @@ export function Hero() {
         <div className="relative max-w-5xl mx-auto mt-12 flex flex-col items-center">
           
           {/* AI COACH VISUAL LAYER */}
-          <div className="relative w-full h-[450px] flex items-center justify-center mb-4 z-20">
+          <div className="relative w-full h-[450px] lg:h-[540px] flex items-center justify-center mb-4 z-20">
             
-            {USE_THREE_PROTOTYPE ? (
-              <ThreeCoach />
-            ) : (
-              <>
-                {/* Holographic Platform */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[350px] h-24 z-0">
-              <div className="absolute inset-0 border-[3px] border-brand-500/20 rounded-[50%] shadow-[0_0_40px_rgba(139,92,246,0.3)]" />
-              <div className="absolute left-6 right-6 top-6 bottom-6 border border-cyan-500/30 rounded-[50%]" />
-              <div className="absolute left-12 right-12 top-12 bottom-12 bg-brand-500/40 rounded-[50%] shadow-[0_0_80px_40px_rgba(139,92,246,0.5)] blur-md" />
-              <div className="absolute bottom-12 left-1/2 -translate-x-1/2 w-48 h-40 bg-gradient-to-t from-brand-500/30 to-transparent blur-2xl rounded-t-full" />
-            </div>
-
-            {/* Central Floating Robot */}
-            <motion.div animate={breatheAnimation} className="relative z-10 flex flex-col items-center mt-[-60px]">
-              {/* Robot Head */}
-              <div className="w-40 h-28 bg-gradient-to-b from-slate-200 to-slate-400 rounded-[3.5rem] shadow-[inset_0_-8px_20px_rgba(0,0,0,0.3),0_15px_30px_rgba(0,0,0,0.6)] flex items-center justify-center border-t border-white relative z-20 mb-[-20px]">
-                {/* Visor */}
-                <div className="w-32 h-16 bg-obsidian rounded-[2rem] shadow-[inset_0_6px_20px_rgba(0,0,0,1)] flex items-center justify-center border border-white/10 relative overflow-hidden">
-                  <div className="flex gap-5">
-                    <div className="w-6 h-3 bg-cyan-400 rounded-full shadow-[0_0_20px_#22d3ee]" style={{ clipPath: 'polygon(0 30%, 100% 0, 100% 100%, 0 100%)' }} />
-                    <div className="w-6 h-3 bg-cyan-400 rounded-full shadow-[0_0_20px_#22d3ee]" style={{ clipPath: 'polygon(0 0, 100% 30%, 100% 100%, 0 100%)' }} />
-                  </div>
-                </div>
-                {/* Antennas */}
-                <div className="absolute -top-5 left-10 w-1.5 h-8 bg-slate-300 rounded-t-full shadow-sm" />
-                <div className="absolute -top-5 right-10 w-1.5 h-8 bg-slate-300 rounded-t-full shadow-sm" />
-                {/* Ears */}
-                <div className="absolute -left-3 top-12 w-5 h-10 bg-slate-400 rounded-l-full shadow-inner border-y border-l border-white/50" />
-                <div className="absolute -right-3 top-12 w-5 h-10 bg-slate-400 rounded-r-full shadow-inner border-y border-r border-white/50" />
-              </div>
-              
-              {/* Robot Body */}
-              <div className="w-56 h-48 bg-gradient-to-b from-slate-200 to-slate-500 rounded-[4rem] shadow-[inset_0_-20px_40px_rgba(0,0,0,0.5),0_25px_50px_rgba(139,92,246,0.3)] flex flex-col items-center justify-center relative z-10 border-t border-white/60">
-                {/* Core/Chest */}
-                <div className="mt-4 w-24 h-24 bg-obsidian rounded-full flex items-center justify-center border-4 border-brand-500/50 shadow-[inset_0_0_30px_rgba(139,92,246,0.8),0_0_50px_rgba(139,92,246,0.6)] relative overflow-hidden">
-                  <span className="text-4xl font-black text-white drop-shadow-[0_0_15px_rgba(255,255,255,1)] z-10">IV</span>
-                  <div className="absolute inset-0 bg-brand-500/40 animate-pulse-glow" />
-                </div>
-                {/* Arms */}
-                <div className="absolute -left-10 top-12 w-14 h-24 bg-gradient-to-b from-slate-300 to-slate-500 rounded-full shadow-[inset_0_-6px_15px_rgba(0,0,0,0.4),0_10px_20px_rgba(0,0,0,0.5)] origin-top rotate-[25deg] border-t border-white/60" />
-                <div className="absolute -right-10 top-12 w-14 h-24 bg-gradient-to-b from-slate-300 to-slate-500 rounded-full shadow-[inset_0_-6px_15px_rgba(0,0,0,0.4),0_10px_20px_rgba(0,0,0,0.5)] origin-top -rotate-[25deg] border-t border-white/60" />
-              </div>
-            </motion.div>
-            </>
-            )}
+            <ThreeCoach />
 
             {/* FLOATING METRIC CARDS */}
             {/* Card 1: Score Trend */}
