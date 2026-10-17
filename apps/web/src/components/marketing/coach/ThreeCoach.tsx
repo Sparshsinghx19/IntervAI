@@ -55,6 +55,7 @@ export function ThreeCoach({ className }: ThreeCoachProps) {
   const smallScreen = useMediaQuery('(max-width: 767px)');
   const cores = useSyncExternalStore(noopSubscribe, () => navigator.hardwareConcurrency || 8, () => 8);
   const lowPower = smallScreen || !finePointer || cores <= 4;
+  const allowDrag = finePointer && !reducedMotion;
 
   // Pause rendering while the hero is off-screen.
   useEffect(() => {
@@ -97,7 +98,8 @@ export function ThreeCoach({ className }: ThreeCoachProps) {
   return (
     <div
       ref={containerRef}
-      className={`relative w-full h-[400px] lg:h-[550px] flex items-center justify-center z-10 pointer-events-auto ${className || ''}`}
+      // The parent decides the size. Touch / reduced-motion visitors get no drag, so the canvas never captures scrolling.
+      className={`relative w-full flex items-center justify-center ${allowDrag ? 'pointer-events-auto' : 'pointer-events-none'} ${className ?? 'h-[400px] lg:h-[550px]'}`}
     >
       {hasWebGL ? (
         <WebGLBoundary>
@@ -118,7 +120,7 @@ export function ThreeCoach({ className }: ThreeCoachProps) {
                 pointer={pointer}
                 reducedMotion={reducedMotion}
                 lowPower={lowPower}
-                allowDrag={finePointer && !reducedMotion}
+                allowDrag={allowDrag}
               />
             </Suspense>
           </Canvas>

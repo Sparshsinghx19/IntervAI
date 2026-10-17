@@ -18,7 +18,7 @@ interface CoachSceneProps {
 const FIT_WIDTH = 2.9;
 
 export function CoachScene({ pointer, reducedMotion, lowPower, allowDrag }: CoachSceneProps) {
-  const { geometries, materials, shadowTexture } = useCoachAssets(lowPower ? 'low' : 'high');
+  const { geometries, anchors, materials, shadowTexture } = useCoachAssets(lowPower ? 'low' : 'high');
   const viewport = useThree((s) => s.viewport);
 
   // Keep the whole character in frame on narrow (mobile) canvases.
@@ -37,7 +37,7 @@ export function CoachScene({ pointer, reducedMotion, lowPower, allowDrag }: Coac
           polar={[-Math.PI / 14, Math.PI / 14]}
           azimuth={[-Math.PI / 4, Math.PI / 4]}
         >
-          <CoachBody geometries={geometries} materials={materials} pointer={pointer} reducedMotion={reducedMotion} />
+          <CoachBody geometries={geometries} anchors={anchors} materials={materials} pointer={pointer} reducedMotion={reducedMotion} />
         </PresentationControls>
         <CoachPlatform shadowTexture={shadowTexture} reducedMotion={reducedMotion} />
       </group>
