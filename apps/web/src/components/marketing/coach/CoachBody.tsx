@@ -4,11 +4,12 @@ import { useMemo, useRef, type MutableRefObject } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { facePointAt, headNormalAt, headPoint, headPointAt } from './geometry';
-import { EYE, type CoachGeometries, type CoachMaterials } from './useCoachAssets';
+import { BODY, EYE, type CoachAnchors, type CoachGeometries, type CoachMaterials } from './useCoachAssets';
 import type { CoachPointer } from './types';
 
 interface CoachBodyProps {
   geometries: CoachGeometries;
+  anchors: CoachAnchors;
   materials: CoachMaterials;
   pointer: MutableRefObject<CoachPointer>;
   reducedMotion: boolean;
@@ -21,14 +22,24 @@ const RING_BASE = new THREE.Color('#b26bff');
 // Body layout (units relative to the waist). Derived from the front/side/back sheets.
 const HEAD_PIVOT_Y = 0.36;
 const HEAD_OFFSET = 0.53;
-const SHOULDER_X = 0.56;
-const SHOULDER_Y = 0.05;
+const SHOULDER_X = 0.47;
+const SHOULDER_Y = 0.045;
+const ARM_OFFSET = 0.145;
+const ARM_SPLAY = 0.06;
+const HAND_SCALE = 1.24;
+const FINGER_Z = [-0.075, -0.025, 0.025, 0.075];
+// [y, radius] of the stepped neck rings, narrowing toward the helmet.
+const NECK_RINGS: [number, number][] = [
+  [0.258, 0.15],
+  [0.296, 0.14],
+  [0.332, 0.13],
+];
 
 function quatFromTo(from: THREE.Vector3, to: THREE.Vector3) {
   return new THREE.Quaternion().setFromUnitVectors(from, to.clone().normalize());
 }
 
-export function CoachBody({ geometries: g, materials: m, pointer, reducedMotion }: CoachBodyProps) {
+export function CoachBody({ geometries: g, anchors, materials: m, pointer, reducedMotion }: CoachBodyProps) {
   const rootRef = useRef<THREE.Group>(null);
   const upperRef = useRef<THREE.Group>(null);
   const headRef = useRef<THREE.Group>(null);
@@ -77,8 +88,13 @@ export function CoachBody({ geometries: g, materials: m, pointer, reducedMotion 
       eyes,
       ears,
       antenna: { base: antennaBase, quat: quatFromTo(UP, antennaDir), rod: antennaDir.clone().multiplyScalar(0.17) },
+      emblemQuat: quatFromTo(FORWARD, anchors.emblem.normal),
+      ventQuat: quatFromTo(FORWARD, anchors.vent.normal),
+      dashQuat: quatFromTo(FORWARD, anchors.dash.normal).multiply(
+        new THREE.Quaternion().setFromAxisAngle(FORWARD, Math.PI / 2),
+      ),
     };
-  }, []);
+  }, [anchors]);
 
   useFrame((state, rawDelta) => {
     const dt = Math.min(rawDelta, 0.1);
@@ -126,7 +142,7 @@ export function CoachBody({ geometries: g, materials: m, pointer, reducedMotion 
       const elbow = elbowRefs.current[i];
       if (arm) {
         arm.rotation.x = Math.sin(t * 1.05 + i * 0.9) * 0.04 * motion;
-        arm.rotation.z = s * (0.1 + (Math.sin(t * 1.05 + 0.4) * 0.5 + 0.5) * 0.025 * motion);
+        arm.rotation.z = s * (ARM_SPLAY + (Math.sin(t * 1.05 + 0.4) * 0.5 + 0.5) * 0.025 * motion);
       }
       if (elbow) {
         elbow.rotation.x = -0.14 - (Math.sin(t * 1.05 + i * 0.9 + 0.5) * 0.5 + 0.5) * 0.06 * motion;
@@ -169,77 +185,94 @@ export function CoachBody({ geometries: g, materials: m, pointer, reducedMotion 
   return (
     <group ref={rootRef}>
       {/* ============ UPPER BODY (pivots at the waist) ============ */}
-      <group position={[0, -0.38, 0]}>
+      <group position={[0, BODY.waistY, 0]}>
         <group ref={upperRef}>
-          <group position={[0, 0.38, 0]}>
-            {/* Torso shell */}
+          <group position={[0, -BODY.waistY, 0]}>
+            {/* Torso shell with panel seams */}
             <mesh geometry={g.torso} material={m.shell} />
+            <mesh geometry={g.torsoSeams} material={m.seam} />
+            <mesh geometry={g.seamDash} material={m.seam} position={anchors.dash.pos} quaternion={layout.dashQuat} />
 
-            {/* Chest seam accents */}
-            <mesh geometry={g.seamDash} material={m.seam} position={[0.19, 0.0, 0.252]} rotation={[0, 0.5, Math.PI / 2]} />
-            <mesh geometry={g.seamDash} material={m.seam} position={[-0.27, -0.2, 0.2]} rotation={[0, -0.75, 1.25]} />
-
-            {/* IV chest emblem */}
-            <group position={[0, -0.03, 0.27]} rotation={[-0.06, 0, 0]}>
-              <mesh geometry={g.disc} material={m.joint} rotation={[Math.PI / 2, 0, 0]} scale={[0.128, 0.03, 0.128]} />
-              <mesh geometry={g.torus} material={m.joint} position={[0, 0, 0.012]} scale={[0.118, 0.118, 0.06]} />
-              <mesh geometry={g.disc} material={m.visor} rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0.012]} scale={[0.098, 0.012, 0.098]} />
-              <mesh ref={emblemRingRef} geometry={g.thinTorus} material={m.glowRing} position={[0, 0, 0.02]} scale={0.1} />
-              <group position={[0, 0, 0.024]}>
+            {/* IV chest emblem, seated into the chest surface */}
+            <group position={anchors.emblem.pos} quaternion={layout.emblemQuat}>
+              <mesh geometry={g.disc} material={m.joint} rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -0.01]} scale={[0.132, 0.036, 0.132]} />
+              <mesh geometry={g.thinTorus} material={m.trim} position={[0, 0, 0.004]} scale={[0.136, 0.136, 0.12]} />
+              <mesh geometry={g.disc} material={m.visor} rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0.006]} scale={[0.104, 0.012, 0.104]} />
+              <mesh ref={emblemRingRef} geometry={g.thinTorus} material={m.glowRing} position={[0, 0, 0.013]} scale={0.104} />
+              <group position={[0, 0, 0.016]}>
                 <mesh geometry={g.glyphI} material={m.glowCore} position={[-0.036, 0, 0]} scale={[1, 1, 0.5]} />
                 <mesh geometry={g.glyphV} material={m.glowCore} position={[0.0035, 0.002, 0]} rotation={[0, 0, 0.29]} scale={[1, 1, 0.5]} />
                 <mesh geometry={g.glyphV} material={m.glowCore} position={[0.0325, 0.002, 0]} rotation={[0, 0, -0.29]} scale={[1, 1, 0.5]} />
               </group>
-              <mesh ref={emblemGlowRef} geometry={g.plane} material={m.emblemGlow} position={[0, 0, 0.03]} scale={0.42} />
+              <mesh ref={emblemGlowRef} geometry={g.plane} material={m.emblemGlow} position={[0, 0, 0.024]} scale={0.44} />
             </group>
 
             {/* Back vent panel */}
-            <group position={[0, -0.06, -0.262]}>
-              <mesh geometry={g.backVent} material={m.shell} />
-              <mesh geometry={g.box} material={m.joint} position={[0, 0.014, -0.036]} scale={[0.1, 0.012, 0.012]} />
-              <mesh geometry={g.box} material={m.joint} position={[0, -0.014, -0.036]} scale={[0.1, 0.012, 0.012]} />
+            <group position={anchors.vent.pos} quaternion={layout.ventQuat}>
+              <mesh geometry={g.backVent} material={m.shell} position={[0, 0, 0.012]} />
+              <mesh geometry={g.box} material={m.joint} position={[0, 0.015, 0.046]} scale={[0.1, 0.012, 0.012]} />
+              <mesh geometry={g.box} material={m.joint} position={[0, -0.015, 0.046]} scale={[0.1, 0.012, 0.012]} />
             </group>
 
-            {/* Neck: collar + ribbed joint */}
-            <mesh geometry={g.torus} material={m.joint} position={[0, 0.18, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[0.17, 0.15, 0.14]} />
-            <mesh geometry={g.disc} material={m.joint} position={[0, 0.3, 0]} scale={[0.115, 0.24, 0.115]} />
-            {[0.25, 0.315].map((y) => (
-              <mesh key={y} geometry={g.torus} material={m.joint} position={[0, y, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[0.13, 0.13, 0.11]} />
+            {/* Neck: wide collar seated in the shoulders, then stepped rings into the helmet */}
+            <mesh geometry={g.torus} material={m.joint} position={[0, 0.2, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[0.19, 0.19, 0.17]} />
+            <mesh geometry={g.thinTorus} material={m.trim} position={[0, 0.232, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[0.175, 0.175, 0.3]} />
+            <mesh geometry={g.disc} material={m.joint} position={[0, 0.29, 0]} scale={[0.125, 0.2, 0.125]} />
+            {NECK_RINGS.map(([y, r]) => (
+              <mesh key={y} geometry={g.torus} material={m.joint} position={[0, y, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[r, r, r * 0.85]} />
             ))}
 
             {/* Shoulders + arms */}
             {[-1, 1].map((s, i) => (
               <group key={s}>
-                {/* Socket ball and collar ring */}
-                <mesh geometry={g.sphere} material={m.joint} position={[s * 0.43, SHOULDER_Y - 0.01, 0]} scale={0.09} />
-                <mesh geometry={g.disc} material={m.joint} position={[s * 0.5, SHOULDER_Y - 0.01, 0]} rotation={[0, 0, Math.PI / 2]} scale={[0.082, 0.07, 0.082]} />
+                {/* Shoulder ball joint, half-seated in the torso's upper corner */}
+                <mesh geometry={g.sphere} material={m.joint} position={[s * SHOULDER_X, SHOULDER_Y, 0]} scale={0.118} />
 
-                <group ref={(el) => {
-                      armRefs.current[i] = el;
-                    }} position={[s * SHOULDER_X, SHOULDER_Y, 0]} rotation={[0, 0, s * 0.1]}>
-                  <mesh geometry={g.upperArm} material={m.shell} position={[s * 0.02, 0, 0]} />
-                  <mesh geometry={g.torus} material={m.joint} position={[s * 0.02, -0.035, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[0.122, 0.122, 0.09]} />
+                <group
+                  ref={(el) => {
+                    armRefs.current[i] = el;
+                  }}
+                  position={[s * SHOULDER_X, SHOULDER_Y, 0]}
+                  rotation={[0, 0, s * ARM_SPLAY]}
+                >
+                  {/* Upper arm: domed cap over the ball, dark break line, sleeve */}
+                  <group position={[s * ARM_OFFSET, 0, 0]}>
+                    <mesh geometry={g.upperArm} material={m.shell} />
 
-                  {/* Elbow */}
-                  <group ref={(el) => {
-                      elbowRefs.current[i] = el;
-                    }} position={[s * 0.02, -0.285, 0]}>
-                    <mesh geometry={g.sphere} material={m.joint} scale={0.092} />
-                    <mesh geometry={g.torus} material={m.joint} rotation={[Math.PI / 2, 0, 0]} scale={[0.1, 0.1, 0.12]} />
-                    <group position={[0, 0.285, 0]}>
-                      <mesh geometry={g.forearm} material={m.shell} />
-                      {/* Wrist */}
-                      <mesh geometry={g.torus} material={m.joint} position={[0, -0.575, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[0.078, 0.078, 0.1]} />
-                      <mesh geometry={g.disc} material={m.joint} position={[0, -0.585, 0]} scale={[0.07, 0.04, 0.07]} />
-                      {/* Hand: mitten palm, curled fingers with dark knuckles, thumb */}
-                      <group position={[0, -0.6, 0]} scale={1.38}>
-                        <mesh geometry={g.palm} material={m.shell} position={[0, -0.075, 0]} />
-                        <mesh geometry={g.fingers} material={m.shell} position={[-s * 0.028, -0.15, 0.008]} rotation={[0, 0, s * 0.35]} />
-                        {[-0.05, 0, 0.05].map((z) => (
-                          <mesh key={z} geometry={g.sphere} material={m.joint} position={[-s * 0.072, -0.17, z]} scale={[0.024, 0.03, 0.022]} />
-                        ))}
-                        <mesh geometry={g.sphere} material={m.joint} position={[-s * 0.045, -0.04, 0.07]} scale={0.03} />
-                        <mesh geometry={g.thumb} material={m.shell} position={[-s * 0.06, -0.075, 0.085]} rotation={[0.55, 0, s * 0.35]} />
+                    {/* Elbow hinge */}
+                    <group
+                      ref={(el) => {
+                        elbowRefs.current[i] = el;
+                      }}
+                      position={[0, -0.265, 0]}
+                    >
+                      <mesh geometry={g.sphere} material={m.joint} scale={0.095} />
+                      <mesh geometry={g.torus} material={m.joint} rotation={[Math.PI / 2, 0, 0]} scale={[0.108, 0.108, 0.12]} />
+                      <group position={[0, -0.02, 0]}>
+                        <mesh geometry={g.forearm} material={m.shell} />
+
+                        {/* Wrist */}
+                        <group position={[0, -0.285, 0]}>
+                          <mesh geometry={g.torus} material={m.joint} rotation={[Math.PI / 2, 0, 0]} scale={[0.082, 0.082, 0.1]} />
+                          <mesh geometry={g.sphere} material={m.joint} position={[0, -0.02, 0]} scale={[0.075, 0.05, 0.075]} />
+
+                          {/* Fist: rounded back-of-hand shell, padded finger segments over a dark core, thumb */}
+                          <group position={[0, -0.02, 0]} scale={HAND_SCALE}>
+                            <mesh geometry={g.handBack} material={m.shell} position={[s * 0.012, -0.09, 0]} />
+                            <mesh geometry={g.fingerCore} material={m.joint} position={[-s * 0.048, -0.15, 0]} />
+                            {FINGER_Z.map((z, k) => (
+                              <mesh
+                                key={z}
+                                geometry={g.fingerPad}
+                                material={m.shell}
+                                position={[-s * 0.072, -0.152 - Math.abs(k - 1.5) * 0.008, z]}
+                                rotation={[0, 0, s * 0.18]}
+                              />
+                            ))}
+                            <mesh geometry={g.sphere} material={m.joint} position={[-s * 0.03, -0.06, 0.095]} scale={0.028} />
+                            <mesh geometry={g.thumbPad} material={m.shell} position={[-s * 0.05, -0.1, 0.1]} rotation={[0.2, 0, -s * 0.35]} />
+                          </group>
+                        </group>
                       </group>
                     </group>
                   </group>
@@ -312,22 +345,30 @@ export function CoachBody({ geometries: g, materials: m, pointer, reducedMotion 
 
       {[-1, 1].map((s) => (
         <group key={s}>
-          {/* Hip joint */}
-          <mesh geometry={g.sphere} material={m.joint} position={[s * 0.25, -0.56, 0]} scale={0.11} />
-          <mesh geometry={g.torus} material={m.joint} position={[s * 0.25, -0.6, 0]} rotation={[Math.PI / 2, 0, s * 0.08]} scale={[0.135, 0.135, 0.12]} />
-          {/* Thigh */}
-          <mesh geometry={g.thigh} material={m.shell} position={[s * 0.25, -0.6, 0]} rotation={[0, 0, s * 0.08]} />
-          {/* Knee */}
-          <mesh geometry={g.disc} material={m.joint} position={[s * 0.275, -0.88, 0]} rotation={[0, 0, s * 0.1]} scale={[0.125, 0.07, 0.125]} />
-          <mesh geometry={g.torus} material={m.joint} position={[s * 0.275, -0.88, 0]} rotation={[Math.PI / 2, 0, s * 0.1]} scale={[0.13, 0.13, 0.12]} />
-          {/* Shin / boot cuff */}
-          <mesh geometry={g.shin} material={m.shell} position={[s * 0.3, -0.9, 0]} rotation={[0, 0, s * 0.1]} />
-          {/* Ankle ball, set back like the reference */}
-          <mesh geometry={g.sphere} material={m.joint} position={[s * 0.34, -1.14, -0.15]} scale={0.135} />
-          {/* Boot */}
-          <mesh geometry={g.bootCuff} material={m.shell} position={[s * 0.34, -1.1, 0.0]} />
-          <mesh geometry={g.boot} material={m.shell} position={[s * 0.36, -1.23, 0.11]} />
-          <mesh geometry={g.sole} material={m.joint} position={[s * 0.36, -1.37, 0.11]} />
+          {/* Hip ball joint, housed in the side of the hip armor */}
+          <mesh geometry={g.sphere} material={m.joint} position={[s * 0.24, -0.665, 0]} scale={0.118} />
+          {/* Thigh shell with a dark ring where it meets the hip */}
+          <group position={[s * 0.255, -0.675, 0]} rotation={[0, 0, s * 0.07]}>
+            <mesh geometry={g.thigh} material={m.shell} />
+            <mesh geometry={g.torus} material={m.joint} position={[0, -0.012, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[0.15, 0.15, 0.1]} />
+          </group>
+          {/* Knee: dark band with a rounded joint cap */}
+          <group position={[s * 0.285, -0.95, 0]} rotation={[0, 0, s * 0.08]}>
+            <mesh geometry={g.disc} material={m.joint} scale={[0.14, 0.07, 0.14]} />
+            <mesh geometry={g.torus} material={m.joint} rotation={[Math.PI / 2, 0, 0]} scale={[0.138, 0.138, 0.13]} />
+            <mesh geometry={g.sphere} material={m.joint} position={[0, 0, 0.09]} scale={[0.075, 0.065, 0.06]} />
+          </group>
+          {/* Lower leg flows into the boot */}
+          <mesh geometry={g.shin} material={m.shell} position={[s * 0.31, -0.975, 0]} rotation={[0, 0, s * 0.08]} />
+          {/* Ankle joint, set back toward the heel like the reference */}
+          <mesh geometry={g.sphere} material={m.joint} position={[s * 0.355, -1.18, -0.145]} scale={0.112} />
+          {/* Boot shell, toe-cap seam, dark sole */}
+          <mesh geometry={g.bootCuff} material={m.shell} position={[s * 0.345, -1.14, 0.0]} />
+          <group position={[s * 0.37, -1.27, 0.1]}>
+            <mesh geometry={g.boot} material={m.shell} />
+            <mesh geometry={g.toeSeam} material={m.seam} />
+          </group>
+          <mesh geometry={g.sole} material={m.joint} position={[s * 0.37, -1.405, 0.1]} />
         </group>
       ))}
     </group>

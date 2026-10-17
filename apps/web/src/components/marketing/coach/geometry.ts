@@ -276,3 +276,123 @@ export function createRadialTexture(inner: string, outer: string, size = 128) {
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
+
+const sgnPow = (v: number, e: number) => Math.sign(v) * Math.pow(Math.abs(v), e);
+
+export interface LoftSection {
+  y: number;
+  /** Half-width (x) and half-depth (z) of the cross-section. */
+  w: number;
+  d: number;
+  /** Forward shift of the cross-section centre (chest fullness). */
+  z?: number;
+}
+
+/**
+ * Smooth body shell swept through rounded-rectangle (super-ellipse) cross-sections.
+ * Gives armor a broad front, real side depth and soft corners, which round lathes can't.
+ * `point(t, a)` samples the same surface so trims and seams sit exactly on it.
+ */
+export function createLoftSampler(sections: LoftSection[], n = 2.4) {
+  const shape = new THREE.CatmullRomCurve3(
+    sections.map((s) => new THREE.Vector3(s.w, s.y, s.d)),
+    false,
+    'catmullrom',
+    0.5,
+  );
+  const shift = new THREE.CatmullRomCurve3(
+    sections.map((s) => new THREE.Vector3(s.z ?? 0, s.y, 0)),
+    false,
+    'catmullrom',
+    0.5,
+  );
+  const tmp = new THREE.Vector3();
+  const tmpShift = new THREE.Vector3();
+
+  const point = (t: number, a: number, lift = 0, out = new THREE.Vector3()) => {
+    shape.getPoint(t, tmp);
+    shift.getPoint(t, tmpShift);
+    const w = Math.max(tmp.x, 0) + lift;
+    const d = Math.max(tmp.z, 0) + lift;
+    return out.set(w * sgnPow(Math.cos(a), 2 / n), tmp.y, d * sgnPow(Math.sin(a), 2 / n) + tmpShift.x);
+  };
+
+  /** Parameter t at which the shell reaches height y (sections run top to bottom). */
+  const tAtY = (y: number) => {
+    let lo = 0;
+    let hi = 1;
+    for (let i = 0; i < 40; i++) {
+      const mid = (lo + hi) / 2;
+      if (shape.getPoint(mid, tmp).y > y) lo = mid;
+      else hi = mid;
+    }
+    return (lo + hi) / 2;
+  };
+
+  return { point, tAtY };
+}
+
+export type LoftSampler = ReturnType<typeof createLoftSampler>;
+
+export function createLoftGeometry(sampler: LoftSampler, rings = 56, around = 72) {
+  const positions: number[] = [];
+  const indices: number[] = [];
+  const v = new THREE.Vector3();
+  for (let i = 0; i <= rings; i++) {
+    for (let j = 0; j < around; j++) {
+      sampler.point(i / rings, (j / around) * Math.PI * 2, 0, v);
+      positions.push(v.x, v.y, v.z);
+    }
+  }
+  for (let i = 0; i < rings; i++) {
+    for (let j = 0; j < around; j++) {
+      const a = i * around + j;
+      const b = (i + 1) * around + j;
+      const c = (i + 1) * around + ((j + 1) % around);
+      const d = i * around + ((j + 1) % around);
+      indices.push(a, c, b, a, d, c);
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.setIndex(indices);
+  // Collapse the closed ends into proper poles before smoothing normals.
+  const merged = mergeVertices(geo, 1e-5);
+  geo.dispose();
+  merged.computeVertexNormals();
+  return merged;
+}
+
+/** Thin seam tube following (t, a) pairs on a loft surface. */
+export function createLoftSeam(
+  sampler: LoftSampler,
+  sample: (u: number) => [number, number],
+  { radius = 0.0045, lift = 0.001, segments = 64 } = {},
+) {
+  const pts: THREE.Vector3[] = [];
+  for (let i = 0; i <= segments; i++) {
+    const [t, a] = sample(i / segments);
+    pts.push(sampler.point(t, a, lift));
+  }
+  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), segments, radius, 8, false);
+}
+
+/** Point on a super-ellipsoid surface along a direction (matches createSuperEllipsoid). */
+export function superEllipsoidPoint(
+  rx: number,
+  ry: number,
+  rz: number,
+  p: number,
+  dir: THREE.Vector3,
+  lift = 0,
+  out = new THREE.Vector3(),
+) {
+  const d = dir.clone().normalize();
+  const k = Math.pow(
+    Math.pow(Math.abs(d.x), p) + Math.pow(Math.abs(d.y), p) + Math.pow(Math.abs(d.z), p),
+    -1 / p,
+  );
+  out.set(d.x * k * rx, d.y * k * ry, d.z * k * rz);
+  if (lift) out.multiplyScalar((out.length() + lift) / out.length());
+  return out;
+}
