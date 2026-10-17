@@ -24,8 +24,21 @@ describe('Interview Controller - createInterview', () => {
     return res;
   };
 
+  const principal = { userId: 'user-1', sessionId: 'session-1', name: 'Test', email: 't@example.com', role: 'USER' };
+
+  it('returns 401 when there is no authenticated principal', async () => {
+    const createMock = mock.method(interviewService, 'createInterview', async () => ({}));
+    const req: any = { body: { type: 'TECHNICAL', difficulty: 'MEDIUM', focusArea: 'dsa', questionCount: 5, ownerId: 'someone-else' } };
+    const res = createMockRes();
+
+    await interviewController.createInterview(req, res);
+
+    assert.strictEqual(res.statusCode, 401);
+    assert.strictEqual(createMock.mock.callCount(), 0);
+  });
+
   it('returns 400 if required fields are missing', async () => {
-    const req: any = { body: { type: 'TECHNICAL' } };
+    const req: any = { principal, body: { type: 'TECHNICAL' } };
     const res = createMockRes();
 
     await interviewController.createInterview(req, res);
@@ -36,6 +49,7 @@ describe('Interview Controller - createInterview', () => {
 
   it('returns 400 if questionCount is invalid', async () => {
     const req: any = {
+      principal,
       body: {
         type: 'TECHNICAL',
         difficulty: 'MEDIUM',
@@ -53,6 +67,7 @@ describe('Interview Controller - createInterview', () => {
 
   it('returns 400 if type is invalid', async () => {
     const req: any = {
+      principal,
       body: {
         type: 'INVALID_TYPE',
         difficulty: 'MEDIUM',
@@ -77,6 +92,7 @@ describe('Interview Controller - createInterview', () => {
     });
 
     const req: any = {
+      principal,
       body: {
         type: 'TECHNICAL',
         difficulty: 'MEDIUM',
@@ -102,9 +118,10 @@ describe('Interview Controller - createInterview', () => {
       status: 'NOT_STARTED'
     };
 
-    mock.method(interviewService, 'createInterview', async () => mockCreated);
+    const createMock = mock.method(interviewService, 'createInterview', async () => mockCreated);
 
     const req: any = {
+      principal,
       body: {
         type: 'TECHNICAL',
         difficulty: 'MEDIUM',
@@ -118,5 +135,6 @@ describe('Interview Controller - createInterview', () => {
 
     assert.strictEqual(res.statusCode, 201);
     assert.deepStrictEqual(res.jsonData, mockCreated);
+    assert.strictEqual((createMock.mock.calls[0].arguments[0] as any).ownerId, 'user-1');
   });
 });

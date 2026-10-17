@@ -54,7 +54,7 @@ export function Hero() {
             <PrimaryLink href="/interview">Start a practice interview</PrimaryLink>
             <SecondaryLink href="#feedback">See a sample report</SecondaryLink>
           </div>
-          <p className="mt-4 text-sm text-slate-500">No account needed. Setting up a session takes four choices.</p>
+          <p className="mt-4 text-sm text-slate-500">Sign in to save every report. Setting up a session takes four choices.</p>
 
           <dl className="mt-10 grid max-w-lg gap-2.5 border-t border-white/[0.08] pt-6 sm:mt-12 sm:grid-cols-3 sm:gap-0 sm:divide-x sm:divide-white/[0.08]">
             {FACTS.map((fact) => (

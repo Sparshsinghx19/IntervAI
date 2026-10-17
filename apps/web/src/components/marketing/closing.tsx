@@ -14,7 +14,7 @@ const REASONS = [
   },
   {
     title: 'Ready in under a minute',
-    body: 'No account and no onboarding. Four choices and the first question is on screen.',
+    body: 'A quick sign-up and no onboarding. Four choices and the first question is on screen.',
   },
 ];
 

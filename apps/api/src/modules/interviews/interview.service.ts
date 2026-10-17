@@ -9,6 +9,7 @@ interface CreateInterviewData {
   difficulty: 'EASY' | 'MEDIUM' | 'HARD';
   focusArea: string;
   questionCount: number;
+  ownerId: string;
 }
 
 export const interviewService = {

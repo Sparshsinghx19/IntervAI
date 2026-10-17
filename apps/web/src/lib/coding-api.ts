@@ -1,3 +1,5 @@
+import { API_URL, apiFetch } from './api-client';
+
 export interface CodingProblemExample {
   input: string;
   output: string;
@@ -91,14 +93,14 @@ export function formatSafeRunnerErrorMessage(error: unknown): string {
 export async function fetchCodingProblem({
   interviewId,
   questionId,
-  apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000',
+  apiUrl = API_URL,
 }: {
   interviewId: string;
   questionId: string;
   apiUrl?: string;
 }): Promise<{ supported: boolean; problem?: PublicCodingProblem; error?: string }> {
   try {
-    const res = await fetch(`${apiUrl}/api/interviews/${interviewId}/questions/${questionId}/coding-problem`);
+    const res = await apiFetch(`${apiUrl}/api/interviews/${interviewId}/questions/${questionId}/coding-problem`);
     const data = await res.json();
 
     if (!res.ok) {
@@ -127,7 +129,7 @@ export async function runCode({
   questionId,
   language,
   sourceCode,
-  apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000',
+  apiUrl = API_URL,
 }: {
   interviewId: string;
   questionId: string;
@@ -136,7 +138,7 @@ export async function runCode({
   apiUrl?: string;
 }): Promise<{ success: boolean; result?: RunCodeResponse; error?: string }> {
   try {
-    const res = await fetch(`${apiUrl}/api/interviews/${interviewId}/questions/${questionId}/code/run`, {
+    const res = await apiFetch(`${apiUrl}/api/interviews/${interviewId}/questions/${questionId}/code/run`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ language, sourceCode }),
@@ -168,7 +170,7 @@ export async function submitCode({
   questionId,
   language,
   sourceCode,
-  apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000',
+  apiUrl = API_URL,
 }: {
   interviewId: string;
   questionId: string;
@@ -177,7 +179,7 @@ export async function submitCode({
   apiUrl?: string;
 }): Promise<{ success: boolean; result?: SubmitCodeResponse; error?: string }> {
   try {
-    const res = await fetch(`${apiUrl}/api/interviews/${interviewId}/questions/${questionId}/code/submit`, {
+    const res = await apiFetch(`${apiUrl}/api/interviews/${interviewId}/questions/${questionId}/code/submit`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ language, sourceCode }),

@@ -155,3 +155,15 @@ body {
   background: linear-gradient(180deg, #8b5cf6, #06b6d4) !important;
   border-color: rgba(34, 211, 238, 0.35) !important;
 }
+
+/* Auth card entrance; applied with `motion-safe:` so reduced-motion users get a static card. */
+@keyframes auth-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

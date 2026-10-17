@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { apiFetch } from '@/lib/api-client';
+import { RequireAuth } from '@/components/auth/RequireAuth';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   SkipForward,
@@ -130,14 +132,16 @@ function InterviewSessionContent() {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
         const [questionsRes, interviewRes] = await Promise.all([
-          fetch(`${apiUrl}/api/interviews/${id}/questions`),
-          fetch(`${apiUrl}/api/interviews/${id}`)
+          apiFetch(`${apiUrl}/api/interviews/${id}/questions`),
+          apiFetch(`${apiUrl}/api/interviews/${id}`)
         ]);
 
         if (!questionsRes.ok || !interviewRes.ok) {
           setError(true);
           setErrorMessage(
-            questionsRes.status === 404 || interviewRes.status === 404
+            questionsRes.status === 401 || interviewRes.status === 401
+              ? 'Your session has expired. Please log in again.'
+              : questionsRes.status === 404 || interviewRes.status === 404
               ? 'Interview not found.'
               : 'Failed to load session data.'
           );
@@ -324,7 +328,7 @@ function InterviewSessionContent() {
 
     // On the final question, query backend to verify interview completion
     try {
-      const statusRes = await fetch(`${apiUrl}/api/interviews/${id}`);
+      const statusRes = await apiFetch(`${apiUrl}/api/interviews/${id}`);
       if (statusRes.ok) {
         const interviewData = await statusRes.json();
         if (interviewData.status === 'COMPLETED') {
@@ -405,7 +409,7 @@ function InterviewSessionContent() {
 
     // On final question, verify backend completion before batch report
     try {
-      const statusRes = await fetch(`${apiUrl}/api/interviews/${id}`);
+      const statusRes = await apiFetch(`${apiUrl}/api/interviews/${id}`);
       if (statusRes.ok) {
         const interviewData = await statusRes.json();
         if (interviewData.status === 'COMPLETED') {
@@ -457,7 +461,7 @@ function InterviewSessionContent() {
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
     try {
-      const statusRes = await fetch(`${apiUrl}/api/interviews/${id}`);
+      const statusRes = await apiFetch(`${apiUrl}/api/interviews/${id}`);
       if (statusRes.ok) {
         const interviewData = await statusRes.json();
         if (interviewData.status === 'COMPLETED') {
@@ -939,7 +943,9 @@ export default function InterviewSession() {
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"></div>
       </div>
     }>
-      <InterviewSessionContent />
+      <RequireAuth>
+        <InterviewSessionContent />
+      </RequireAuth>
     </Suspense>
   );
 }

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { interviewService } from './interview.service.js';
+import { HISTORY_DEFAULT_LIMIT, HISTORY_MAX_LIMIT, interviewHistoryService } from './interview-history.service.js';
 
 const VALID_TYPES = ['TECHNICAL', 'BEHAVIORAL', 'HR'] as const;
 const VALID_DIFFICULTIES = ['EASY', 'MEDIUM', 'HARD'] as const;
@@ -26,9 +27,43 @@ const difficultyMap: Record<string, InterviewDifficulty> = {
 };
 
 export const interviewController = {
+  /**
+   * GET /api/interviews/history: the signed-in user's completed interviews with saved reports.
+   * The user always comes from the session; there is no user parameter.
+   */
+  getInterviewHistory: async (req: Request, res: Response) => {
+    const ownerId = req.principal?.userId;
+    if (!ownerId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    let limit = HISTORY_DEFAULT_LIMIT;
+    if (req.query.limit !== undefined) {
+      const parsed = Number(req.query.limit);
+      if (!Number.isInteger(parsed) || parsed < 1 || parsed > HISTORY_MAX_LIMIT) {
+        return res.status(400).json({ error: `limit must be an integer between 1 and ${HISTORY_MAX_LIMIT}` });
+      }
+      limit = parsed;
+    }
+
+    try {
+      const reports = await interviewHistoryService.listCompletedReports(ownerId, limit);
+      return res.status(200).json({ reports, limit });
+    } catch (error: any) {
+      console.error('Failed to load interview history:', error?.name || 'Error');
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  },
+
   createInterview: async (req: Request, res: Response) => {
     try {
-      const { type, difficulty, focusArea, questionCount } = req.body;
+      // The owner always comes from the authenticated session, never from the body.
+      const ownerId = req.principal?.userId;
+      if (!ownerId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const { type, difficulty, focusArea, questionCount } = req.body ?? {};
       
       // Basic invalid input handling
       if (!type || !difficulty || !focusArea || questionCount === undefined) {
@@ -55,6 +90,7 @@ export const interviewController = {
         difficulty: normalizedDifficulty,
         focusArea: String(focusArea),
         questionCount,
+        ownerId,
       });
       
       // Return appropriate JSON response

@@ -62,7 +62,8 @@ describe('Interview Service - Retrieval Integration', () => {
       type: 'TECHNICAL',
       difficulty: 'MEDIUM',
       focusArea: 'DSA',
-      questionCount: 2
+      questionCount: 2,
+      ownerId: 'owner-uuid'
     });
 
     assert.strictEqual(queryMock.mock.callCount(), 1);
@@ -76,7 +77,8 @@ describe('Interview Service - Retrieval Integration', () => {
       type: 'HR',
       difficulty: 'MEDIUM',
       focusArea: 'Culture Fit',
-      questionCount: 2
+      questionCount: 2,
+      ownerId: 'owner-uuid'
     });
 
     // Retrieval should never be called
@@ -106,7 +108,8 @@ describe('Interview Service - Retrieval Integration', () => {
       type: 'TECHNICAL',
       difficulty: 'MEDIUM',
       focusArea: 'OS',
-      questionCount: 2
+      questionCount: 2,
+      ownerId: 'owner-uuid'
     });
 
     console.warn = originalWarn;
@@ -129,7 +132,8 @@ describe('Interview Service - Retrieval Integration', () => {
       type: 'TECHNICAL',
       difficulty: 'MEDIUM',
       focusArea: 'DBMS',
-      questionCount: 2
+      questionCount: 2,
+      ownerId: 'owner-uuid'
     });
 
     console.warn = originalWarn;

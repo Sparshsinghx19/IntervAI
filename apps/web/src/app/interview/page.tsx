@@ -1,5 +1,10 @@
 import { InterviewSetup } from '@/components/interview/InterviewSetup';
+import { RequireAuth } from '@/components/auth/RequireAuth';
 
 export default function InterviewPage() {
-  return <InterviewSetup />;
+  return (
+    <RequireAuth>
+      <InterviewSetup />
+    </RequireAuth>
+  );
 }

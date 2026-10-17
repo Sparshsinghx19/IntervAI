@@ -1,4 +1,5 @@
 import { EvaluationResponse, EvaluationReportResponse } from '@/types/evaluation';
+import { API_URL, apiFetch } from './api-client';
 
 export interface SubmitEvaluationResult {
   success: boolean;
@@ -28,7 +29,7 @@ export async function submitAnswerAndEvaluate(params: {
   apiUrl?: string;
   fetchFn?: typeof fetch;
 }): Promise<SubmitEvaluationResult> {
-  const { interviewId, questionId, answerText, apiUrl = 'http://localhost:4000', fetchFn = fetch } = params;
+  const { interviewId, questionId, answerText, apiUrl = API_URL, fetchFn = apiFetch } = params;
 
   const trimmed = answerText.trim();
   if (!trimmed) {
@@ -102,7 +103,7 @@ export async function retryEvaluation(params: {
   apiUrl?: string;
   fetchFn?: typeof fetch;
 }): Promise<RetryEvaluationResult> {
-  const { interviewId, questionId, apiUrl = 'http://localhost:4000', fetchFn = fetch } = params;
+  const { interviewId, questionId, apiUrl = API_URL, fetchFn = apiFetch } = params;
 
   try {
     const evalRes = await fetchFn(`${apiUrl}/api/interviews/${interviewId}/questions/${questionId}/evaluation`, {
@@ -139,7 +140,7 @@ export async function fetchExistingEvaluation(params: {
   apiUrl?: string;
   fetchFn?: typeof fetch;
 }): Promise<FetchEvaluationResult> {
-  const { interviewId, questionId, apiUrl = 'http://localhost:4000', fetchFn = fetch } = params;
+  const { interviewId, questionId, apiUrl = API_URL, fetchFn = apiFetch } = params;
 
   try {
     const res = await fetchFn(`${apiUrl}/api/interviews/${interviewId}/questions/${questionId}/evaluation`);
@@ -171,7 +172,7 @@ export async function saveInterviewAnswer(params: {
   apiUrl?: string;
   fetchFn?: typeof fetch;
 }): Promise<SaveAnswerResult> {
-  const { interviewId, questionId, answerText, apiUrl = 'http://localhost:4000', fetchFn = fetch } = params;
+  const { interviewId, questionId, answerText, apiUrl = API_URL, fetchFn = apiFetch } = params;
 
   const trimmed = answerText.trim();
   if (!trimmed) {
@@ -295,7 +296,7 @@ export async function generateEvaluationReport(params: {
   apiUrl?: string;
   fetchFn?: typeof fetch;
 }): Promise<GenerateReportResult> {
-  const { interviewId, apiUrl = 'http://localhost:4000', fetchFn = fetch } = params;
+  const { interviewId, apiUrl = API_URL, fetchFn = apiFetch } = params;
 
   try {
     const res = await fetchFn(`${apiUrl}/api/interviews/${interviewId}/evaluation-report`, {
@@ -336,7 +337,7 @@ export async function fetchEvaluationReport(params: {
   apiUrl?: string;
   fetchFn?: typeof fetch;
 }): Promise<FetchReportResult> {
-  const { interviewId, apiUrl = 'http://localhost:4000', fetchFn = fetch } = params;
+  const { interviewId, apiUrl = API_URL, fetchFn = apiFetch } = params;
 
   try {
     const res = await fetchFn(`${apiUrl}/api/interviews/${interviewId}/evaluation-report`);

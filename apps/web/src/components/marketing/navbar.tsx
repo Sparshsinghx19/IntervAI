@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ChevronLeft } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { ChevronLeft, FileText, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 const SECTION_LINKS = [
   { href: "#session", label: "How it works" },
@@ -25,6 +27,7 @@ function Logo() {
 /** Marketing nav: transparent over the hero, solid once the page scrolls. Only re-renders when crossing the threshold. */
 function MarketingNav() {
   const [scrolled, setScrolled] = useState(false);
+  const isAuthenticated = useAuth().status === "authenticated";
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -55,14 +58,77 @@ function MarketingNav() {
           ))}
         </div>
 
-        <Link
-          href="/interview"
-          className="inline-flex h-10 items-center rounded-full bg-white px-4 sm:h-9 text-sm font-medium text-obsidian transition-colors hover:bg-brand-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian"
-        >
-          Start practising
-        </Link>
+        <div className="flex items-center gap-1 sm:gap-2">
+          {isAuthenticated ? (
+            <>
+              <MyReportsLink className="hidden sm:inline-flex" />
+              <LogoutButton className="hidden sm:inline-flex" />
+            </>
+          ) : (
+            <Link
+              href="/login"
+              className="inline-flex h-10 items-center rounded-full px-3.5 sm:h-9 text-sm font-medium text-slate-300 transition-colors hover:bg-white/[0.04] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+            >
+              Log in
+            </Link>
+          )}
+          <Link
+            href={isAuthenticated ? "/interview" : "/signup"}
+            className="inline-flex h-10 items-center rounded-full bg-white px-4 sm:h-9 text-sm font-medium text-obsidian transition-colors hover:bg-brand-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian"
+          >
+            {isAuthenticated ? "Start practising" : "Get started"}
+          </Link>
+        </div>
       </div>
     </nav>
+  );
+}
+
+/** Link to the signed-in user's saved interview reports. */
+function MyReportsLink({ className }: { className?: string }) {
+  const pathname = usePathname();
+  const active = pathname === "/reports";
+  return (
+    <Link
+      href="/reports"
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-sm font-medium transition-colors hover:bg-white/[0.04] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 sm:px-3.5",
+        active ? "text-white" : "text-slate-300",
+        className,
+      )}
+    >
+      <FileText className="h-4 w-4 shrink-0" aria-hidden="true" />
+      <span className="sr-only sm:not-sr-only">My Reports</span>
+    </Link>
+  );
+}
+
+/** Signs out, then returns to the landing page. Local drafts and layout preferences are left untouched. */
+function LogoutButton({ className }: { className?: string }) {
+  const { logout } = useAuth();
+  const router = useRouter();
+  const [pending, setPending] = useState(false);
+
+  const handleLogout = async () => {
+    setPending(true);
+    await logout();
+    router.push("/");
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleLogout}
+      disabled={pending}
+      className={cn(
+        "inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-sm font-medium text-slate-300 transition-colors hover:bg-white/[0.04] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 disabled:opacity-60 sm:px-3.5",
+        className,
+      )}
+    >
+      <LogOut className="h-4 w-4 shrink-0" aria-hidden="true" />
+      <span className="sr-only sm:not-sr-only">{pending ? "Logging out…" : "Log out"}</span>
+    </button>
   );
 }
 
@@ -76,8 +142,9 @@ export function Navbar({ mode = 'marketing' }: { mode?: 'marketing' | 'app' | 's
           <Logo />
 
           {mode === 'app' && (
-            <div className="flex items-center">
-              <Link href="/" className="group flex items-center text-sm font-medium text-slate-400 hover:text-white transition-colors">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <AccountSummary />
+              <Link href="/" className="group flex items-center whitespace-nowrap text-sm font-medium text-slate-400 hover:text-white transition-colors">
                 <ChevronLeft className="w-4 h-4 mr-1 transition-transform group-hover:-translate-x-1" />
                 Back to Home
               </Link>
@@ -92,5 +159,19 @@ export function Navbar({ mode = 'marketing' }: { mode?: 'marketing' | 'app' | 's
         </div>
       </div>
     </nav>
+  );
+}
+
+function AccountSummary() {
+  const { status, user } = useAuth();
+  if (status !== "authenticated" || !user) return null;
+  return (
+    <div className="flex items-center gap-1">
+      <span className="hidden max-w-[160px] truncate text-sm text-slate-400 md:inline" title={user.email}>
+        {user.name}
+      </span>
+      <MyReportsLink />
+      <LogoutButton />
+    </div>
   );
 }

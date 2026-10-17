@@ -18,6 +18,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Navbar } from '@/components/marketing/navbar';
+import { API_URL, apiFetch } from '@/lib/api-client';
 import { SelectorCard } from './SelectorCard';
 import {
   interviewTypes,
@@ -83,8 +84,7 @@ export function InterviewSetup() {
     setIsPreparing(true);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-      const res = await fetch(`${apiUrl}/api/interviews`, {
+      const res = await apiFetch(`${API_URL}/api/interviews`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -126,7 +126,9 @@ export function InterviewSetup() {
     } catch (err: unknown) {
       console.error(err);
       const apiErr = err as ApiError;
-      if (apiErr?.status) {
+      if (apiErr?.status === 401) {
+        setError('Your session has expired. Please log in again to start an interview.');
+      } else if (apiErr?.status) {
         const detail = apiErr.serverMessage ? ` (${apiErr.serverMessage})` : '';
         setError(
           `Unable to create interview [HTTP ${apiErr.status}]${detail}. Please try again.`
