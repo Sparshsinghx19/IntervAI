@@ -88,3 +88,66 @@ export function formatScore(value: number | null): string {
 export function firstName(name: string | null | undefined): string {
   return (name ?? '').trim().split(/\s+/)[0] ?? '';
 }
+
+// ---------- Unfinished interviews ----------
+
+/** GET /api/interviews/in-progress: an interview the candidate can continue. */
+export interface InProgressInterview {
+  interviewId: string;
+  type: string;
+  difficulty: string;
+  focusArea: string;
+  status: string;
+  questionCount: number;
+  answeredCount: number;
+  startedAt: string;
+  lastActivityAt: string;
+}
+
+export type InProgressState =
+  | { status: 'loading' }
+  | { status: 'error'; message: string }
+  | { status: 'ready'; interviews: InProgressInterview[] };
+
+function parseInProgress(raw: unknown): InProgressInterview | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  const total = count(r.questionCount);
+  const answered = count(r.answeredCount);
+  if (typeof r.interviewId !== 'string' || !r.interviewId || total === null || answered === null) return null;
+  const text = (v: unknown) => (typeof v === 'string' ? v : '');
+  return {
+    interviewId: r.interviewId,
+    type: text(r.type),
+    difficulty: text(r.difficulty),
+    focusArea: text(r.focusArea),
+    status: text(r.status),
+    questionCount: total,
+    answeredCount: Math.min(answered, total),
+    startedAt: text(r.startedAt),
+    lastActivityAt: text(r.lastActivityAt),
+  };
+}
+
+/** Loads the candidate's unfinished interviews. Never throws. */
+export async function fetchInProgressInterviews(
+  { fetchFn = apiFetch, apiUrl = API_URL }: { fetchFn?: FetchFn; apiUrl?: string } = {}
+): Promise<Exclude<InProgressState, { status: 'loading' }>> {
+  try {
+    const res = await fetchFn(`${apiUrl}/api/interviews/in-progress`, { cache: 'no-store' });
+    if (!res.ok) return { status: 'error', message: 'We couldn’t check for unfinished interviews.' };
+    const body = (await res.json().catch(() => null)) as { interviews?: unknown } | null;
+    if (!body || !Array.isArray(body.interviews)) {
+      return { status: 'error', message: 'We couldn’t check for unfinished interviews.' };
+    }
+    return {
+      status: 'ready',
+      interviews: body.interviews.map(parseInProgress).filter((i): i is InProgressInterview => i !== null),
+    };
+  } catch {
+    return { status: 'error', message: 'We couldn’t check for unfinished interviews.' };
+  }
+}
+
+/** Link that reopens an existing interview session (never creates a new one). */
+export const resumeHref = (interviewId: string) => `/interview/session?id=${encodeURIComponent(interviewId)}`;

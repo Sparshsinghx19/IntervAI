@@ -27,6 +27,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { codeDraftKey, codeFor, languageFor, SavedCodeSubmission, SnapshotStore } from '@/lib/interview-resume';
 import {
   fetchCodingProblem,
   runCode,
@@ -153,7 +154,14 @@ interface CodingWorkspaceProps {
   isSubmitting?: boolean;
   questionNumber?: number;
   totalQuestions?: number;
+  /** Per-user, per-interview draft storage so editor work survives refreshes. */
+  resumeStore?: SnapshotStore | null;
+  /** Latest saved submission for this question, used when there is no newer local draft. */
+  savedSubmission?: SavedCodeSubmission;
 }
+
+const LANGUAGES: readonly Language[] = ['cpp', 'python', 'java'];
+const isLanguage = (value: string | undefined): value is Language => !!value && (LANGUAGES as readonly string[]).includes(value);
 
 type PanelTab = 'testcases' | 'output' | 'results';
 type MobileView = 'problem' | 'code';
@@ -167,8 +175,12 @@ export function CodingWorkspace({
   onSubmitSuccess,
   isSubmitting: externalSubmitting = false,
   questionNumber,
-  totalQuestions
+  totalQuestions,
+  resumeStore = null,
+  savedSubmission,
 }: CodingWorkspaceProps) {
+  const questionKey = question?.id !== undefined ? String(question.id) : '';
+
   // Language & Drafts State
   const [language, setLanguage] = useState<Language>('cpp');
   const [drafts, setDrafts] = useState<Record<string, string>>({});
@@ -240,6 +252,16 @@ export function CodingWorkspace({
     return () => clearTimeout(timer);
   }, []);
 
+  // Reopen each question in the language last used for it (or its saved submission's).
+  const savedSubmissionLanguage = savedSubmission?.language;
+  useEffect(() => {
+    if (!questionKey || !resumeStore) return;
+    const restored = languageFor(questionKey, savedSubmissionLanguage ? { language: savedSubmissionLanguage } : undefined, resumeStore.get());
+    if (!isLanguage(restored)) return;
+    const timer = setTimeout(() => setLanguage(restored), 0);
+    return () => clearTimeout(timer);
+  }, [questionKey, resumeStore, savedSubmissionLanguage]);
+
   // Close Layout Menu on Click Outside
   useEffect(() => {
     if (!showLayoutMenu) return;
@@ -254,7 +276,9 @@ export function CodingWorkspace({
 
   const currentDraftKey = `${question?.id ?? 'default'}-${language}`;
   const starterCodeForLang = (problemData?.starterCode?.[language]) || TEMPLATES[language];
-  const currentCode = drafts[currentDraftKey] ?? starterCodeForLang;
+  // In-session edits first, then a restored draft or submission, then the starter template.
+  const restoredCode = questionKey && resumeStore ? codeFor(questionKey, language, savedSubmission, resumeStore.get()) : undefined;
+  const currentCode = drafts[currentDraftKey] ?? restoredCode ?? starterCodeForLang;
   const isExecutionSupported = SUPPORTED_EXECUTION_LANGUAGES.includes(language);
 
   // Execution actions
@@ -329,6 +353,9 @@ export function CodingWorkspace({
   const handleLanguageChange = (newLanguage: Language) => {
     setLanguage(newLanguage);
     setShowResetConfirm(false);
+    if (questionKey && resumeStore) {
+      resumeStore.update((snap) => ({ ...snap, languages: { ...snap.languages, [questionKey]: newLanguage } }));
+    }
   };
 
   const handleCodeChange = (value: string | undefined) => {
@@ -337,6 +364,12 @@ export function CodingWorkspace({
       ...prev,
       [currentDraftKey]: newCode
     }));
+    if (questionKey && resumeStore) {
+      resumeStore.update((snap) => ({
+        ...snap,
+        codeDrafts: { ...snap.codeDrafts, [codeDraftKey(questionKey, language)]: { text: newCode, updatedAt: Date.now() } },
+      }));
+    }
   };
 
   const handleReset = () => {

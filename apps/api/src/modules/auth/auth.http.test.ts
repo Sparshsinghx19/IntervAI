@@ -10,6 +10,7 @@ import { interviewAccess } from './interview-access.js';
 import { instantFromMs } from './auth.time.js';
 import { interviewRouter } from '../interviews/interview.route.js';
 import { interviewService } from '../interviews/interview.service.js';
+import { interviewProgressService } from '../interviews/interview-progress.service.js';
 import { evaluationService } from '../evaluations/evaluation.service.js';
 import { codingService } from '../coding/coding.service.js';
 import { requireAuth } from './auth.middleware.js';
@@ -296,6 +297,7 @@ describe('Interview authorization', () => {
     const ok = (body: unknown) => async () => body;
     mock.method(interviewService, 'getInterviewById', async (id: string) => ({ id, status: 'IN_PROGRESS' }));
     mock.method(interviewService, 'getInterviewQuestions', ok([{ id: questionId }]));
+    mock.method(interviewProgressService, 'getProgress', async (id: string) => ({ interviewId: id, status: 'IN_PROGRESS', answers: [], codeSubmissions: [] }));
     mock.method(interviewService, 'startInterview', async (id: string) => ({ id, status: 'IN_PROGRESS' }));
     mock.method(interviewService, 'submitAnswer', ok({ id: 'answer' }));
     mock.method(evaluationService, 'evaluateAnswer', ok({ id: 'evaluation' }));
@@ -311,6 +313,7 @@ describe('Interview authorization', () => {
   const routesFor = (id: string): Array<[string, string, unknown?]> => [
     ['GET', `/api/interviews/${id}`],
     ['GET', `/api/interviews/${id}/questions`],
+    ['GET', `/api/interviews/${id}/progress`],
     ['POST', `/api/interviews/${id}/start`],
     ['POST', `/api/interviews/${id}/questions/${questionId}/answer`, { answerText: 'answer' }],
     ['POST', `/api/interviews/${id}/questions/${questionId}/evaluation`],
@@ -420,7 +423,7 @@ describe('Interview authorization', () => {
     assert.ok(stack.slice(0, firstRoute).some((layer) => layer.handle === requireAuth), 'requireAuth runs before all routes');
 
     // User-scoped routes that address no interview id; they read the user from the session.
-    const userScoped = new Set(['/', '/history', '/summary']);
+    const userScoped = new Set(['/', '/history', '/summary', '/in-progress']);
     for (const layer of stack.filter((l) => l.route)) {
       const path: string = layer.route.path;
       if (userScoped.has(path)) {

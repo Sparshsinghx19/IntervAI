@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { interviewService } from './interview.service.js';
+import { IN_PROGRESS_DEFAULT_LIMIT, IN_PROGRESS_MAX_LIMIT, interviewProgressService } from './interview-progress.service.js';
 import { HISTORY_DEFAULT_LIMIT, HISTORY_MAX_LIMIT, interviewHistoryService } from './interview-history.service.js';
 
 const VALID_TYPES = ['TECHNICAL', 'BEHAVIORAL', 'HR'] as const;
@@ -31,6 +32,49 @@ export const interviewController = {
    * GET /api/interviews/history: the signed-in user's completed interviews with saved reports.
    * The user always comes from the session; there is no user parameter.
    */
+  /**
+   * GET /api/interviews/in-progress: the signed-in user's unfinished interviews, most recent activity first.
+   */
+  getInProgressInterviews: async (req: Request, res: Response) => {
+    const ownerId = req.principal?.userId;
+    if (!ownerId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    let limit = IN_PROGRESS_DEFAULT_LIMIT;
+    if (req.query.limit !== undefined) {
+      const parsed = Number(req.query.limit);
+      if (!Number.isInteger(parsed) || parsed < 1 || parsed > IN_PROGRESS_MAX_LIMIT) {
+        return res.status(400).json({ error: `limit must be an integer between 1 and ${IN_PROGRESS_MAX_LIMIT}` });
+      }
+      limit = parsed;
+    }
+
+    try {
+      const interviews = await interviewProgressService.listInProgress(ownerId, limit);
+      return res.status(200).json({ interviews, limit });
+    } catch (error: any) {
+      console.error('Failed to load in-progress interviews:', error?.name || 'Error');
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  },
+
+  /**
+   * GET /api/interviews/:id/progress: saved answers and latest code for an owned interview, used to resume it.
+   */
+  getInterviewProgress: async (req: Request, res: Response) => {
+    try {
+      const progress = await interviewProgressService.getProgress(String(req.params.id));
+      if (!progress) {
+        return res.status(404).json({ error: 'Interview not found' });
+      }
+      return res.status(200).json(progress);
+    } catch (error: any) {
+      console.error('Failed to load interview progress:', error?.name || 'Error');
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  },
+
   /**
    * GET /api/interviews/summary: dashboard metrics for the signed-in user only.
    */

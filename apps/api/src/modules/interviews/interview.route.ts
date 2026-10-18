@@ -18,8 +18,10 @@ interviewRouter.post('/', interviewController.createInterview);
 // Static paths: must stay above '/:id' so they are not read as interview ids.
 interviewRouter.get('/history', interviewController.getInterviewHistory);
 interviewRouter.get('/summary', interviewController.getDashboardSummary);
+interviewRouter.get('/in-progress', interviewController.getInProgressInterviews);
 interviewRouter.get('/:id', ownsId, interviewController.getInterviewById);
 interviewRouter.get('/:id/questions', ownsId, interviewController.getInterviewQuestions);
+interviewRouter.get('/:id/progress', ownsId, interviewController.getInterviewProgress);
 interviewRouter.post('/:id/start', ownsId, interviewController.startInterview);
 interviewRouter.post('/:interviewId/questions/:questionId/answer', ownsInterview, interviewController.submitAnswer);
 interviewRouter.post('/:interviewId/questions/:questionId/evaluation', ownsInterview, evaluationController.evaluateAnswer);

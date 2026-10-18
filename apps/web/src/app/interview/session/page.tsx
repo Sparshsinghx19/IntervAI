@@ -4,6 +4,19 @@ import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { apiFetch } from '@/lib/api-client';
 import { RequireAuth } from '@/components/auth/RequireAuth';
+import { useAuth } from '@/components/auth/AuthProvider';
+import {
+  answerTextFor,
+  countAnswered,
+  browserStorage,
+  chooseResumeIndex,
+  createSnapshotStore,
+  fetchInterviewProgress,
+  InterviewProgress,
+  resumeStorageKey,
+  savedAnswersFromProgress,
+  SnapshotStore,
+} from '@/lib/interview-resume';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   SkipForward,
@@ -57,6 +70,13 @@ function InterviewSessionContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
+
+  // Resume support: server progress plus a per-user, per-interview local snapshot
+  // (current question and unsent drafts). See lib/interview-resume.ts.
+  const [progress, setProgress] = useState<InterviewProgress | null>(null);
+  const [resumeStore, setResumeStore] = useState<SnapshotStore | null>(null);
 
   // Config State
   const [questions, setQuestions] = useState<QuestionItem[]>([]);
@@ -131,9 +151,10 @@ function InterviewSessionContent() {
     const loadQuestions = async () => {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-        const [questionsRes, interviewRes] = await Promise.all([
+        const [questionsRes, interviewRes, progressResult] = await Promise.all([
           apiFetch(`${apiUrl}/api/interviews/${id}/questions`),
-          apiFetch(`${apiUrl}/api/interviews/${id}`)
+          apiFetch(`${apiUrl}/api/interviews/${id}`),
+          fetchInterviewProgress(id, { apiUrl }),
         ]);
 
         if (!questionsRes.ok || !interviewRes.ok) {
@@ -151,17 +172,48 @@ function InterviewSessionContent() {
 
         const data = await questionsRes.json();
         const interviewData = await interviewRes.json();
+        const loadedQuestions: QuestionItem[] = data.questions || [];
 
-        setQuestions(data.questions || []);
+        setQuestions(loadedQuestions);
         setInterviewType(interviewData.type || '');
         setInterviewDifficulty(interviewData.difficulty || 'MEDIUM');
         setFocusArea(interviewData.focusArea || '');
 
+        const store = userId ? createSnapshotStore(browserStorage(), resumeStorageKey(userId, id)) : null;
+        setResumeStore(store);
+
         // If interview was already completed, automatically restore or display the final report
         if (interviewData.status === 'COMPLETED') {
+          store?.clear();
           setIsInterviewComplete(true);
           setAiStatus('COMPLETED');
           loadEvaluationReport();
+          return;
+        }
+
+        // Without saved progress we cannot tell what was already answered; stop
+        // rather than risk the candidate re-answering over saved work.
+        if (!progressResult.ok) {
+          setError(true);
+          setErrorMessage(
+            progressResult.status === 401
+              ? 'Your session has expired. Please log in again.'
+              : 'We couldn’t load your saved progress. Please try again; your submitted answers are safe.'
+          );
+          return;
+        }
+
+        // Resume where the candidate left off.
+        const saved = savedAnswersFromProgress(progressResult.progress);
+        const snapshot = store?.get();
+        setProgress(progressResult.progress);
+        setSavedAnswersByQuestion(saved);
+        if (snapshot && loadedQuestions.length > 0) {
+          const startIndex = chooseResumeIndex(loadedQuestions, progressResult.progress, snapshot);
+          setCurrentIndex(startIndex);
+          setAnswer(answerTextFor(String(loadedQuestions[startIndex].id), progressResult.progress, snapshot, saved));
+        } else if (loadedQuestions.length > 0) {
+          setAnswer(saved[String(loadedQuestions[0].id)] ?? '');
         }
       } catch (err) {
         console.error('Session load error:', err);
@@ -172,7 +224,37 @@ function InterviewSessionContent() {
       }
     };
     loadQuestions();
-  }, [id]);
+    // userId is stable once RequireAuth has rendered this page.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, userId]);
+
+  // Remember the current question so a refresh or return visit reopens it.
+  const resumeQuestionId = questions[currentIndex] ? String(questions[currentIndex].id) : '';
+  useEffect(() => {
+    if (!resumeStore || !resumeQuestionId || isInterviewComplete) return;
+    resumeStore.update((snap) => ({ ...snap, currentQuestionId: resumeQuestionId }));
+  }, [resumeStore, resumeQuestionId, isInterviewComplete]);
+
+  // Write pending drafts immediately when the tab is hidden or closed.
+  useEffect(() => {
+    if (!resumeStore) return;
+    const flush = () => resumeStore.flush();
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') flush();
+    };
+    window.addEventListener('pagehide', flush);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      flush();
+      window.removeEventListener('pagehide', flush);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [resumeStore]);
+
+  // A finished interview has nothing left to resume.
+  useEffect(() => {
+    if (isInterviewComplete) resumeStore?.clear();
+  }, [isInterviewComplete, resumeStore]);
 
   // 2. Timer
   useEffect(() => {
@@ -192,6 +274,40 @@ function InterviewSessionContent() {
   const currentQuestionType = currentQuestion?.type || 'THEORY';
   const isCodingQuestion = currentQuestionType === 'CODING';
   const isFinalQuestion = questions.length > 0 && currentIndex === questions.length - 1;
+  const answeredCount = progress ? countAnswered(questions, progress) : 0;
+
+  /** Text to show for a question: a newer unsent draft, otherwise the saved answer. */
+  const textFor = (questionId: string, saved: Record<string, string>) =>
+    resumeStore ? answerTextFor(questionId, progress, resumeStore.get(), saved) : saved[questionId] || '';
+
+  /** Saves the unsent answer for the current question (debounced to storage). */
+  const recordAnswerDraft = (text: string) => {
+    if (!resumeStore || !currentQuestionId) return;
+    resumeStore.update((snap) => ({
+      ...snap,
+      answerDrafts: { ...snap.answerDrafts, [currentQuestionId]: { text, updatedAt: Date.now() } },
+    }));
+  };
+
+  /** After the server accepts an answer, the local draft must not shadow it later. */
+  const markAnswerSubmitted = (questionId: string, answerText: string) => {
+    resumeStore?.update((snap) => {
+      const rest = { ...snap.answerDrafts };
+      delete rest[questionId];
+      return { ...snap, answerDrafts: rest };
+    });
+    setProgress((prev) =>
+      prev
+        ? {
+            ...prev,
+            answers: [
+              ...prev.answers.filter((a) => a.questionId !== questionId),
+              { questionId, answerText, submittedAt: new Date().toISOString() },
+            ],
+          }
+        : prev
+    );
+  };
 
   // Synchronize workspace mode based on the current question's explicit type:
   // For THEORY (and default): open Text Mode by default, no C++ starter code or Coding IDE toggle.
@@ -248,13 +364,20 @@ function InterviewSessionContent() {
           <p className="text-sm text-slate-400">
             {errorMessage || 'Unable to initialize interview questions. Please return to setup and try again.'}
           </p>
-          <div className="pt-2">
+          <div className="pt-2 flex flex-col gap-2">
+            <Button
+              variant="glow"
+              className="w-full"
+              onClick={() => window.location.reload()}
+            >
+              Try again
+            </Button>
             <Button
               variant="outline"
               className="w-full border-white/10 hover:bg-white/5"
-              onClick={() => router.push('/interview')}
+              onClick={() => router.push('/dashboard')}
             >
-              Back to Interview Setup
+              Back to Dashboard
             </Button>
           </div>
         </Card>
@@ -272,7 +395,7 @@ function InterviewSessionContent() {
       const nextIndex = currentIndex + 1;
       const nextQuestionId = String(questions[nextIndex]?.id);
       setCurrentIndex(nextIndex);
-      setAnswer(savedAnswersByQuestion[nextQuestionId] || '');
+      setAnswer(textFor(nextQuestionId, savedAnswersByQuestion));
       setAiStatus('LISTENING');
     }
   };
@@ -310,6 +433,7 @@ function InterviewSessionContent() {
     }
 
     // Update locally saved answers cache
+    markAnswerSubmitted(currentQuestionId, trimmedAnswer);
     const updatedAnswers = { ...savedAnswersByQuestion, [currentQuestionId]: trimmedAnswer };
     setSavedAnswersByQuestion(updatedAnswers);
     setEvaluationStage('saved');
@@ -319,7 +443,7 @@ function InterviewSessionContent() {
       const nextIndex = currentIndex + 1;
       const nextQuestionId = String(questions[nextIndex]?.id);
       setCurrentIndex(nextIndex);
-      setAnswer(updatedAnswers[nextQuestionId] || '');
+      setAnswer(textFor(nextQuestionId, updatedAnswers));
       setEvaluationStage('idle');
       setIsSubmitting(false);
       setAiStatus('LISTENING');
@@ -350,7 +474,7 @@ function InterviewSessionContent() {
 
     if (unansweredIndex !== -1) {
       setCurrentIndex(unansweredIndex);
-      setAnswer(updatedAnswers[String(questions[unansweredIndex]?.id)] || '');
+      setAnswer(textFor(String(questions[unansweredIndex]?.id), updatedAnswers));
       setEvaluationStage('idle');
       setIsSubmitting(false);
       setValidationError('Please complete all interview questions before submitting the final interview.');
@@ -392,6 +516,7 @@ function InterviewSessionContent() {
       return;
     }
 
+    markAnswerSubmitted(currentQuestionId, codeAnswer);
     const updatedAnswers = { ...savedAnswersByQuestion, [currentQuestionId]: codeAnswer };
     setSavedAnswersByQuestion(updatedAnswers);
     setEvaluationStage('saved');
@@ -400,7 +525,7 @@ function InterviewSessionContent() {
       const nextIndex = currentIndex + 1;
       const nextQuestionId = String(questions[nextIndex]?.id);
       setCurrentIndex(nextIndex);
-      setAnswer(updatedAnswers[nextQuestionId] || '');
+      setAnswer(textFor(nextQuestionId, updatedAnswers));
       setEvaluationStage('idle');
       setIsSubmitting(false);
       setAiStatus('LISTENING');
@@ -431,6 +556,25 @@ function InterviewSessionContent() {
   };
 
   const handleCodingSubmissionSuccess = async (submission: SubmitCodeResponse) => {
+    setProgress((prev) =>
+      prev
+        ? {
+            ...prev,
+            codeSubmissions: [
+              ...prev.codeSubmissions.filter((c) => c.questionId !== currentQuestionId),
+              {
+                questionId: currentQuestionId,
+                language: submission.language,
+                sourceCode: submission.sourceCode,
+                status: submission.status,
+                testsPassed: submission.testsPassed,
+                totalTests: submission.totalTests,
+                submittedAt: new Date().toISOString(),
+              },
+            ],
+          }
+        : prev
+    );
     const updatedAnswers = { ...savedAnswersByQuestion, [currentQuestionId]: submission.sourceCode };
     setSavedAnswersByQuestion(updatedAnswers);
     setEvaluationStage('saved');
@@ -439,7 +583,7 @@ function InterviewSessionContent() {
       const nextIndex = currentIndex + 1;
       const nextQuestionId = String(questions[nextIndex]?.id);
       setCurrentIndex(nextIndex);
-      setAnswer(updatedAnswers[nextQuestionId] || '');
+      setAnswer(textFor(nextQuestionId, updatedAnswers));
       setEvaluationStage('idle');
       setIsSubmitting(false);
       setAiStatus('LISTENING');
@@ -452,7 +596,7 @@ function InterviewSessionContent() {
 
     if (unansweredIndex !== -1) {
       setCurrentIndex(unansweredIndex);
-      setAnswer(updatedAnswers[String(questions[unansweredIndex]?.id)] || '');
+      setAnswer(textFor(String(questions[unansweredIndex]?.id), updatedAnswers));
       setEvaluationStage('idle');
       setIsSubmitting(false);
       setValidationError('Please complete all interview questions before viewing the final report.');
@@ -492,14 +636,14 @@ function InterviewSessionContent() {
       const nextIndex = currentIndex + 1;
       const nextQuestionId = String(questions[nextIndex]?.id);
       setCurrentIndex(nextIndex);
-      setAnswer(savedAnswersByQuestion[nextQuestionId] || '');
+      setAnswer(textFor(nextQuestionId, savedAnswersByQuestion));
     } else {
       const unansweredIndex = questions.findIndex(
         (q) => !savedAnswersByQuestion[String(q.id)]?.trim()
       );
       if (unansweredIndex !== -1) {
         setCurrentIndex(unansweredIndex);
-        setAnswer(savedAnswersByQuestion[String(questions[unansweredIndex]?.id)] || '');
+        setAnswer(textFor(String(questions[unansweredIndex]?.id), savedAnswersByQuestion));
         setValidationError('All interview questions must be answered to complete the interview and generate your report.');
       }
     }
@@ -702,6 +846,8 @@ function InterviewSessionContent() {
               interviewFocusArea={focusArea}
               onSubmitSuccess={handleCodingSubmissionSuccess}
               isSubmitting={isSubmitting}
+              resumeStore={resumeStore}
+              savedSubmission={progress?.codeSubmissions.find((c) => c.questionId === currentQuestionId)}
               questionNumber={currentIndex + 1}
               totalQuestions={questions.length}
             />
@@ -783,6 +929,7 @@ function InterviewSessionContent() {
                     value={answer}
                     onChange={(e) => {
                       setAnswer(e.target.value);
+                      recordAnswerDraft(e.target.value);
                       if (validationError) setValidationError('');
                       if (evaluationStage === 'save_error') setEvaluationStage('idle');
                     }}
@@ -899,6 +1046,13 @@ function InterviewSessionContent() {
                     className="bg-gradient-to-r from-brand-500 to-cyan-500 h-full transition-all duration-500 ease-out"
                     style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
                   />
+                </div>
+
+                <div className="flex justify-between items-center pt-2 border-t border-white/5 text-xs">
+                  <span className="text-slate-400 font-medium">Answered</span>
+                  <span className="text-white font-mono font-semibold" data-testid="answered-count">
+                    {answeredCount} / {questions.length}
+                  </span>
                 </div>
 
                 <div className="flex justify-between items-center pt-2 border-t border-white/5 text-xs">
