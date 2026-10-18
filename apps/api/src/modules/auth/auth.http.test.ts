@@ -1,4 +1,5 @@
 import { describe, it, mock, beforeEach, before, after } from 'node:test';
+import { interviewResearchService } from '../interviews/interview-research.service.js';
 import assert from 'node:assert';
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
@@ -14,6 +15,15 @@ import { interviewProgressService } from '../interviews/interview-progress.servi
 import { evaluationService } from '../evaluations/evaluation.service.js';
 import { codingService } from '../coding/coding.service.js';
 import { requireAuth } from './auth.middleware.js';
+import { interviewLifecycle } from '../interviews/interview-lifecycle.service.js';
+
+/** These suites use hand-built ORM mocks; the interview clock is covered in interview-lifecycle.test.ts. */
+const stubInterviewLifecycle = () => {
+  mock.method(interviewLifecycle, 'expireIfDue', async () => false);
+  mock.method(interviewLifecycle, 'assertOpen', async () => undefined);
+  mock.method(interviewLifecycle, 'lockOpenForSubmission', async () => undefined);
+  mock.method(interviewLifecycle, 'expireOverdueForOwner', async () => undefined);
+};
 
 const ORIGIN = 'http://localhost:3000';
 const PASSWORD = 'correct horse battery';
@@ -103,6 +113,9 @@ const register = async (name: string, email = `${name.toLowerCase()}@example.com
 
 const resetState = () => {
   mock.restoreAll();
+  stubInterviewLifecycle();
+  // Interview creation must never reach live web research in tests.
+  mock.method(interviewResearchService, 'research', async () => ({ status: 'unavailable', retrievedAt: '2026-10-18T00:00:00.000Z', terms: [], reason: 'stubbed in tests' }) as any);
   installFakeDatabase();
   Object.values(authRateLimiters).forEach((limiter) => limiter.reset());
 };
@@ -299,6 +312,7 @@ describe('Interview authorization', () => {
     mock.method(interviewService, 'getInterviewQuestions', ok([{ id: questionId }]));
     mock.method(interviewProgressService, 'getProgress', async (id: string) => ({ interviewId: id, status: 'IN_PROGRESS', answers: [], codeSubmissions: [] }));
     mock.method(interviewService, 'startInterview', async (id: string) => ({ id, status: 'IN_PROGRESS' }));
+    mock.method(interviewService, 'getInterviewById', async (id: string) => ({ id, status: 'COMPLETED', timing: {} }));
     mock.method(interviewService, 'submitAnswer', ok({ id: 'answer' }));
     mock.method(evaluationService, 'evaluateAnswer', ok({ id: 'evaluation' }));
     mock.method(evaluationService, 'getEvaluation', ok({ id: 'evaluation' }));
@@ -315,6 +329,7 @@ describe('Interview authorization', () => {
     ['GET', `/api/interviews/${id}/questions`],
     ['GET', `/api/interviews/${id}/progress`],
     ['POST', `/api/interviews/${id}/start`],
+    ['POST', `/api/interviews/${id}/finalize`],
     ['POST', `/api/interviews/${id}/questions/${questionId}/answer`, { answerText: 'answer' }],
     ['POST', `/api/interviews/${id}/questions/${questionId}/evaluation`],
     ['GET', `/api/interviews/${id}/questions/${questionId}/evaluation`],
@@ -389,6 +404,7 @@ describe('Interview authorization', () => {
   it('rejects a question id that belongs to a different interview', async () => {
     // Use the real services with a question row that belongs to Bob's interview.
     mock.restoreAll();
+    stubInterviewLifecycle();
     installFakeDatabase();
     const { cookie, user } = await register('Carol');
     interviews.set(aliceInterview, { ownerId: user.id });
@@ -423,7 +439,7 @@ describe('Interview authorization', () => {
     assert.ok(stack.slice(0, firstRoute).some((layer) => layer.handle === requireAuth), 'requireAuth runs before all routes');
 
     // User-scoped routes that address no interview id; they read the user from the session.
-    const userScoped = new Set(['/', '/history', '/summary', '/in-progress']);
+    const userScoped = new Set(['/', '/history', '/summary', '/in-progress', '/resume/parse']);
     for (const layer of stack.filter((l) => l.route)) {
       const path: string = layer.route.path;
       if (userScoped.has(path)) {
@@ -438,7 +454,7 @@ describe('Interview authorization', () => {
 });
 
 describe('interviewAccess.isOwnedBy', () => {
-  beforeEach(() => mock.restoreAll());
+  beforeEach(() => { mock.restoreAll(); stubInterviewLifecycle(); });
 
   it('queries by interview id AND owner id so ownerless rows never match', async () => {
     let filter: any;

@@ -28,6 +28,8 @@ import {
   QuestionEvaluationResult,
 } from '@/types/evaluation';
 import { formatSafeEvaluationErrorMessage } from '@/lib/evaluation-api';
+import { questionOriginLabel } from '@/lib/adaptive-setup';
+import { SourcesDisclosure } from './SourcesDisclosure';
 
 interface EvaluationReportViewProps {
   report: EvaluationReportResponse | null;
@@ -356,6 +358,11 @@ export function EvaluationReportView({
                         Q{index + 1}
                       </span>
                       <span className="text-xs text-slate-400">Order #{q.orderIndex}</span>
+                      {questionOriginLabel(q.origin, q.category, Boolean(q.sources?.length)) && (
+                        <span className="hidden sm:inline text-[11px] text-cyan-200/90 bg-cyan-500/10 border border-cyan-400/20 px-2 py-0.5 rounded-full">
+                          {questionOriginLabel(q.origin, q.category, Boolean(q.sources?.length))}
+                        </span>
+                      )}
                     </div>
                     <p className="text-sm sm:text-base font-semibold text-white truncate">
                       {q.questionText}
@@ -378,6 +385,9 @@ export function EvaluationReportView({
                 {/* Expanded Details Body */}
                 {isExpanded && (
                   <div className="px-5 pb-6 pt-2 border-t border-white/5 space-y-6 bg-black/10">
+                    {/* Sources that informed this question (only when stored provenance exists) */}
+                    <SourcesDisclosure sources={q.sources} />
+
                     {/* Evaluator Summary */}
                     <p className="text-sm text-slate-300 leading-relaxed italic bg-white/[0.02] p-3 rounded-lg border border-white/5">
                       "{q.summary}"

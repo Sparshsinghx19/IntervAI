@@ -12,6 +12,15 @@ import {
   interviewProgressService,
   lastActivityMs,
 } from './interview-progress.service.js';
+import { interviewLifecycle } from './interview-lifecycle.service.js';
+
+/** These suites use hand-built ORM mocks; the interview clock is covered in interview-lifecycle.test.ts. */
+const stubInterviewLifecycle = () => {
+  mock.method(interviewLifecycle, 'expireIfDue', async () => false);
+  mock.method(interviewLifecycle, 'assertOpen', async () => undefined);
+  mock.method(interviewLifecycle, 'lockOpenForSubmission', async () => undefined);
+  mock.method(interviewLifecycle, 'expireOverdueForOwner', async () => undefined);
+};
 
 const ALICE = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const BOB = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
@@ -120,7 +129,7 @@ describe('Progress calculations', () => {
 });
 
 describe('interviewProgressService.listInProgress', () => {
-  beforeEach(() => mock.restoreAll());
+  beforeEach(() => { mock.restoreAll(); stubInterviewLifecycle(); });
 
   it("returns only the owner's unfinished interviews, most recent activity first", async () => {
     const quiet = interview(ALICE, '2026-10-05T10:00:00Z');
@@ -159,7 +168,7 @@ describe('interviewProgressService.listInProgress', () => {
 });
 
 describe('interviewProgressService.getProgress', () => {
-  beforeEach(() => mock.restoreAll());
+  beforeEach(() => { mock.restoreAll(); stubInterviewLifecycle(); });
 
   it('returns saved answers and only the latest code submission per question', async () => {
     const IV = '11111111-1111-4111-8111-111111111111';
@@ -203,6 +212,7 @@ describe('Resume endpoints', () => {
   const principal = (userId: string) => ({ userId, sessionId: `s-${userId}`, name: 'U', email: 'u@example.com', role: 'USER' as const });
   beforeEach(() => {
     mock.restoreAll();
+    stubInterviewLifecycle();
     mock.method(authService, 'resolveSession', async (token: string) =>
       token === 'alice' ? principal(ALICE) : token === 'bob' ? principal(BOB) : null);
   });

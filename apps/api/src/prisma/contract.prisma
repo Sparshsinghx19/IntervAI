@@ -48,6 +48,17 @@ enum InterviewStatus {
   COMPLETED
 }
 
+enum InterviewMode {
+  TOPIC
+  RESUME
+  MIXED
+}
+
+enum CompletionReason {
+  ALL_ANSWERED
+  TIME_EXPIRED
+}
+
 model Interview {
   id               Uuid                @id @default(uuid())
   ownerId          Uuid?
@@ -57,6 +68,15 @@ model Interview {
   focusArea        String
   questionCount    Int
   status           InterviewStatus     @default(NOT_STARTED)
+  mode             InterviewMode       @default(TOPIC)
+  targetRole       String?
+  durationMinutes  Int?
+  startedAt        DateTime?
+  deadlineAt       DateTime?
+  completedAt      DateTime?
+  completionReason CompletionReason?
+  followUpCount    Int                 @default(0)
+  planContext      Json?
   createdAt        DateTime            @default(now())
   updatedAt        temporal.updatedAt()
   questions        Question[]
@@ -72,6 +92,13 @@ enum QuestionType {
   SYSTEM_DESIGN
 }
 
+enum QuestionOrigin {
+  CURATED
+  SUBJECT
+  RESUME
+  FOLLOW_UP
+}
+
 model Question {
   id                Uuid             @id @default(uuid())
   interviewId       Uuid
@@ -80,6 +107,10 @@ model Question {
   orderIndex        Int
   type              QuestionType     @default(THEORY)
   codingProblemSlug String?
+  origin            QuestionOrigin   @default(CURATED)
+  category          String?
+  sources           Json?
+  followUpOfId      Uuid?            @unique
   createdAt         DateTime         @default(now())
   updatedAt         temporal.updatedAt()
   answer            Answer?

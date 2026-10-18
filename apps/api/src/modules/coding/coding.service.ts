@@ -1,8 +1,9 @@
 import { db } from '../../prisma/db.js';
-import { CODING_PROBLEMS_CATALOG, findCodingProblemForQuestion } from './coding-problems.catalog.js';
+import { CODING_PROBLEMS_CATALOG, effectiveQuestionType, findCodingProblemForQuestion } from './coding-problems.catalog.js';
 import { judge0Service, Judge0Service, RunnerUnavailableError } from './judge0.service.js';
 import { hiddenTestLoader, HiddenTestLoader } from './hidden-test-loader.js';
 import { buildExecutionHarness } from './coding-harness.js';
+import { interviewLifecycle } from '../interviews/interview-lifecycle.service.js';
 import {
   PublicCodingProblem,
   RunCodeResponse,
@@ -231,6 +232,10 @@ export class CodingService {
     }
 
     const catalogProblem = CODING_PROBLEMS_CATALOG[slug];
+
+    // Refuse early (before running code) if the interview is closed or past its deadline.
+    await interviewLifecycle.assertOpen(options.interviewId);
+
     const hiddenCases = await this.hiddenLoader.getHiddenTestCases(slug);
 
     if (hiddenCases.length === 0) {
@@ -292,6 +297,9 @@ export class CodingService {
 
     // Short DB transaction to persist submission and check interview completion
     const submission = await db.transaction(async (tx) => {
+      // The deadline is re-checked under a row lock: a run that finishes after the
+      // time limit is not recorded.
+      await interviewLifecycle.lockOpenForSubmission(tx, options.interviewId);
       const created = await tx.orm.public.CodeSubmission.create({
         interviewId: options.interviewId,
         questionId: options.questionId,
@@ -308,8 +316,8 @@ export class CodingService {
       const interview = await tx.orm.public.Interview.where({ id: options.interviewId }).first();
       if (interview && interview.status !== 'COMPLETED') {
         const questions = await tx.orm.public.Question.where({ interviewId: options.interviewId }).all();
-        const theoryQuestions = questions.filter((q: any) => q.type !== 'CODING');
-        const codingQuestions = questions.filter((q: any) => q.type === 'CODING');
+        const theoryQuestions = questions.filter((q: any) => effectiveQuestionType(q) !== 'CODING');
+        const codingQuestions = questions.filter((q: any) => effectiveQuestionType(q) === 'CODING');
 
         let theoryAnswered = 0;
         if (theoryQuestions.length > 0) {
@@ -331,9 +339,7 @@ export class CodingService {
 
         const totalAnswered = theoryAnswered + codingAnswered;
         if (totalAnswered >= interview.questionCount && totalAnswered >= questions.length) {
-          await tx.orm.public.Interview.where({ id: options.interviewId }).update({
-            status: 'COMPLETED',
-          });
+          await interviewLifecycle.markAllAnswered(tx, options.interviewId);
         }
       }
 

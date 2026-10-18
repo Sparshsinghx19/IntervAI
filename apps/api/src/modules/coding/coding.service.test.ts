@@ -8,10 +8,20 @@ import { buildExecutionHarness } from './coding-harness.js';
 import { db } from '../../prisma/db.js';
 import { evaluationService } from '../evaluations/evaluation.service.js';
 import { aiEvaluatorService } from '../evaluations/ai-evaluator.service.js';
+import { interviewLifecycle } from '../interviews/interview-lifecycle.service.js';
+
+/** These suites use hand-built ORM mocks; the interview clock is covered in interview-lifecycle.test.ts. */
+const stubInterviewLifecycle = () => {
+  mock.method(interviewLifecycle, 'expireIfDue', async () => false);
+  mock.method(interviewLifecycle, 'assertOpen', async () => undefined);
+  mock.method(interviewLifecycle, 'lockOpenForSubmission', async () => undefined);
+  mock.method(interviewLifecycle, 'expireOverdueForOwner', async () => undefined);
+};
 
 describe('Coding Execution Engine & Judge0 Runner', () => {
   beforeEach(() => {
     mock.restoreAll();
+    stubInterviewLifecycle();
   });
 
   // Mock Language catalog returned by Judge0
@@ -907,7 +917,7 @@ describe('Coding Execution Engine & Judge0 Runner', () => {
               },
               Question: {
                 where: () => ({
-                  all: async () => [{ id: questionId, type: 'CODING' }]
+                  all: async () => [{ id: questionId, type: 'CODING', codingProblemSlug: 'linked-list-cycle' }]
                 })
               },
               Answer: {

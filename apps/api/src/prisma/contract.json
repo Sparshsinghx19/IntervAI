@@ -45,6 +45,19 @@
     "namespaces": {
       "public": {
         "enum": {
+          "CompletionReason": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "ALL_ANSWERED",
+                "value": "ALL_ANSWERED"
+              },
+              {
+                "name": "TIME_EXPIRED",
+                "value": "TIME_EXPIRED"
+              }
+            ]
+          },
           "EvaluationStatus": {
             "codecId": "pg/text@1",
             "members": [
@@ -79,6 +92,23 @@
               }
             ]
           },
+          "InterviewMode": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "TOPIC",
+                "value": "TOPIC"
+              },
+              {
+                "name": "RESUME",
+                "value": "RESUME"
+              },
+              {
+                "name": "MIXED",
+                "value": "MIXED"
+              }
+            ]
+          },
           "InterviewStatus": {
             "codecId": "pg/text@1",
             "members": [
@@ -110,6 +140,27 @@
               {
                 "name": "HR",
                 "value": "HR"
+              }
+            ]
+          },
+          "QuestionOrigin": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "CURATED",
+                "value": "CURATED"
+              },
+              {
+                "name": "SUBJECT",
+                "value": "SUBJECT"
+              },
+              {
+                "name": "RESUME",
+                "value": "RESUME"
+              },
+              {
+                "name": "FOLLOW_UP",
+                "value": "FOLLOW_UP"
               }
             ]
           },
@@ -892,8 +943,35 @@
           },
           "Interview": {
             "fields": {
+              "completedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "kind": "scalar"
+                }
+              },
+              "completionReason": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "CompletionReason",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
               "createdAt": {
                 "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "kind": "scalar"
+                }
+              },
+              "deadlineAt": {
+                "nullable": true,
                 "type": {
                   "codecId": "pg/timestamptz-temporal@1",
                   "kind": "scalar"
@@ -912,10 +990,24 @@
                   "plane": "domain"
                 }
               },
+              "durationMinutes": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
               "focusArea": {
                 "nullable": false,
                 "type": {
                   "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "followUpCount": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
                   "kind": "scalar"
                 }
               },
@@ -926,6 +1018,19 @@
                   "kind": "scalar"
                 }
               },
+              "mode": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "InterviewMode",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
               "ownerId": {
                 "nullable": true,
                 "type": {
@@ -933,10 +1038,24 @@
                   "kind": "scalar"
                 }
               },
+              "planContext": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/json@1",
+                  "kind": "scalar"
+                }
+              },
               "questionCount": {
                 "nullable": false,
                 "type": {
                   "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "startedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-temporal@1",
                   "kind": "scalar"
                 }
               },
@@ -951,6 +1070,13 @@
                   "entityName": "InterviewStatus",
                   "namespaceId": "public",
                   "plane": "domain"
+                }
+              },
+              "targetRole": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
                 }
               },
               "type": {
@@ -1040,26 +1166,53 @@
             },
             "storage": {
               "fields": {
+                "completedAt": {
+                  "column": "completedAt"
+                },
+                "completionReason": {
+                  "column": "completionReason"
+                },
                 "createdAt": {
                   "column": "createdAt"
+                },
+                "deadlineAt": {
+                  "column": "deadlineAt"
                 },
                 "difficulty": {
                   "column": "difficulty"
                 },
+                "durationMinutes": {
+                  "column": "durationMinutes"
+                },
                 "focusArea": {
                   "column": "focusArea"
+                },
+                "followUpCount": {
+                  "column": "followUpCount"
                 },
                 "id": {
                   "column": "id"
                 },
+                "mode": {
+                  "column": "mode"
+                },
                 "ownerId": {
                   "column": "ownerId"
+                },
+                "planContext": {
+                  "column": "planContext"
                 },
                 "questionCount": {
                   "column": "questionCount"
                 },
+                "startedAt": {
+                  "column": "startedAt"
+                },
                 "status": {
                   "column": "status"
+                },
+                "targetRole": {
+                  "column": "targetRole"
                 },
                 "type": {
                   "column": "type"
@@ -1074,6 +1227,13 @@
           },
           "Question": {
             "fields": {
+              "category": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "codingProblemSlug": {
                 "nullable": true,
                 "type": {
@@ -1085,6 +1245,13 @@
                 "nullable": false,
                 "type": {
                   "codecId": "pg/timestamptz-temporal@1",
+                  "kind": "scalar"
+                }
+              },
+              "followUpOfId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
                   "kind": "scalar"
                 }
               },
@@ -1109,10 +1276,30 @@
                   "kind": "scalar"
                 }
               },
+              "origin": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "QuestionOrigin",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
               "questionText": {
                 "nullable": false,
                 "type": {
                   "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "sources": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/json@1",
                   "kind": "scalar"
                 }
               },
@@ -1188,11 +1375,17 @@
             },
             "storage": {
               "fields": {
+                "category": {
+                  "column": "category"
+                },
                 "codingProblemSlug": {
                   "column": "codingProblemSlug"
                 },
                 "createdAt": {
                   "column": "createdAt"
+                },
+                "followUpOfId": {
+                  "column": "followUpOfId"
                 },
                 "id": {
                   "column": "id"
@@ -1203,8 +1396,14 @@
                 "orderIndex": {
                   "column": "orderIndex"
                 },
+                "origin": {
+                  "column": "origin"
+                },
                 "questionText": {
                   "column": "questionText"
+                },
+                "sources": {
+                  "column": "sources"
                 },
                 "type": {
                   "column": "type"
@@ -1912,9 +2111,19 @@
             "interview": {
               "checks": [
                 {
+                  "expression": "\"completionReason\" IN ('ALL_ANSWERED', 'TIME_EXPIRED')",
+                  "name": "interview_completionReason_check_e5987b82",
+                  "prefix": "interview_completionReason_check"
+                },
+                {
                   "expression": "\"difficulty\" IN ('EASY', 'MEDIUM', 'HARD')",
                   "name": "interview_difficulty_check_244bf003",
                   "prefix": "interview_difficulty_check"
+                },
+                {
+                  "expression": "\"mode\" IN ('TOPIC', 'RESUME', 'MIXED')",
+                  "name": "interview_mode_check_d077e14f",
+                  "prefix": "interview_mode_check"
                 },
                 {
                   "expression": "\"status\" IN ('NOT_STARTED', 'IN_PROGRESS', 'COMPLETED')",
@@ -1928,6 +2137,22 @@
                 }
               ],
               "columns": {
+                "completedAt": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "nativeType": "timestamptz",
+                  "nullable": true
+                },
+                "completionReason": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "CompletionReason",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
                 "createdAt": {
                   "codecId": "pg/timestamptz-temporal@1",
                   "default": {
@@ -1936,6 +2161,11 @@
                   },
                   "nativeType": "timestamptz",
                   "nullable": false
+                },
+                "deadlineAt": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "nativeType": "timestamptz",
+                  "nullable": true
                 },
                 "difficulty": {
                   "codecId": "pg/text@1",
@@ -1948,9 +2178,23 @@
                     "plane": "storage"
                   }
                 },
+                "durationMinutes": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": true
+                },
                 "focusArea": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
+                  "nullable": false
+                },
+                "followUpCount": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": 0
+                  },
+                  "nativeType": "int4",
                   "nullable": false
                 },
                 "id": {
@@ -1958,15 +2202,40 @@
                   "nativeType": "uuid",
                   "nullable": false
                 },
+                "mode": {
+                  "codecId": "pg/text@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": "TOPIC"
+                  },
+                  "nativeType": "text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "InterviewMode",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
                 "ownerId": {
                   "codecId": "pg/uuid@1",
                   "nativeType": "uuid",
+                  "nullable": true
+                },
+                "planContext": {
+                  "codecId": "pg/json@1",
+                  "nativeType": "json",
                   "nullable": true
                 },
                 "questionCount": {
                   "codecId": "pg/int4@1",
                   "nativeType": "int4",
                   "nullable": false
+                },
+                "startedAt": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "nativeType": "timestamptz",
+                  "nullable": true
                 },
                 "status": {
                   "codecId": "pg/text@1",
@@ -1982,6 +2251,11 @@
                     "namespaceId": "public",
                     "plane": "storage"
                   }
+                },
+                "targetRole": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
                 },
                 "type": {
                   "codecId": "pg/text@1",
@@ -2038,12 +2312,22 @@
             "question": {
               "checks": [
                 {
+                  "expression": "\"origin\" IN ('CURATED', 'SUBJECT', 'RESUME', 'FOLLOW_UP')",
+                  "name": "question_origin_check_43fd7afc",
+                  "prefix": "question_origin_check"
+                },
+                {
                   "expression": "\"type\" IN ('THEORY', 'CODING', 'SYSTEM_DESIGN')",
                   "name": "question_type_check_9ee3e86d",
                   "prefix": "question_type_check"
                 }
               ],
               "columns": {
+                "category": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
                 "codingProblemSlug": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
@@ -2057,6 +2341,11 @@
                   },
                   "nativeType": "timestamptz",
                   "nullable": false
+                },
+                "followUpOfId": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": true
                 },
                 "id": {
                   "codecId": "pg/uuid@1",
@@ -2073,10 +2362,30 @@
                   "nativeType": "int4",
                   "nullable": false
                 },
+                "origin": {
+                  "codecId": "pg/text@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": "CURATED"
+                  },
+                  "nativeType": "text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "QuestionOrigin",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
                 "questionText": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
                   "nullable": false
+                },
+                "sources": {
+                  "codecId": "pg/json@1",
+                  "nativeType": "json",
+                  "nullable": true
                 },
                 "type": {
                   "codecId": "pg/text@1",
@@ -2132,7 +2441,13 @@
                   "id"
                 ]
               },
-              "uniques": []
+              "uniques": [
+                {
+                  "columns": [
+                    "followUpOfId"
+                  ]
+                }
+              ]
             },
             "user": {
               "checks": [
@@ -2210,6 +2525,13 @@
             }
           },
           "valueSet": {
+            "CompletionReason": {
+              "kind": "valueSet",
+              "values": [
+                "ALL_ANSWERED",
+                "TIME_EXPIRED"
+              ]
+            },
             "EvaluationStatus": {
               "kind": "valueSet",
               "values": [
@@ -2226,6 +2548,14 @@
                 "HARD"
               ]
             },
+            "InterviewMode": {
+              "kind": "valueSet",
+              "values": [
+                "TOPIC",
+                "RESUME",
+                "MIXED"
+              ]
+            },
             "InterviewStatus": {
               "kind": "valueSet",
               "values": [
@@ -2240,6 +2570,15 @@
                 "TECHNICAL",
                 "BEHAVIORAL",
                 "HR"
+              ]
+            },
+            "QuestionOrigin": {
+              "kind": "valueSet",
+              "values": [
+                "CURATED",
+                "SUBJECT",
+                "RESUME",
+                "FOLLOW_UP"
               ]
             },
             "QuestionType": {
@@ -2263,7 +2602,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "4fe7e0fbba4a7785773fa913f7bc760390bc5b62c71e02910ecc2a00d86a81a7"
+    "storageHash": "939e37ca60b3e9fd06d7de3c45ab2513cf4edb0de0e4b1cb10bf0e4eb57a3802"
   },
   "execution": {
     "executionHash": "19c7cf23070ab4a0a6b27c64500360ef862b1d7da53cf8d2bfc5c4d9be0e72ac",

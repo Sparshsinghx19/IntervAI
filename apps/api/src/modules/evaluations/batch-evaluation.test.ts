@@ -10,10 +10,20 @@ import {
 } from './ai-evaluator.service.js';
 import { gemini } from '../../infrastructure/gemini.js';
 import { db } from '../../prisma/db.js';
+import { interviewLifecycle } from '../interviews/interview-lifecycle.service.js';
+
+/** These suites use hand-built ORM mocks; the interview clock is covered in interview-lifecycle.test.ts. */
+const stubInterviewLifecycle = () => {
+  mock.method(interviewLifecycle, 'expireIfDue', async () => false);
+  mock.method(interviewLifecycle, 'assertOpen', async () => undefined);
+  mock.method(interviewLifecycle, 'lockOpenForSubmission', async () => undefined);
+  mock.method(interviewLifecycle, 'expireOverdueForOwner', async () => undefined);
+};
 
 describe('Batch Evaluation Report - Service & AI Logic', () => {
   beforeEach(() => {
     mock.restoreAll();
+    stubInterviewLifecycle();
   });
 
   const mockInterview = {
@@ -319,6 +329,108 @@ describe('Batch Evaluation Report - Service & AI Logic', () => {
         err.code === 'CONFLICT' &&
         err.message.includes('Evaluation report is currently being generated')
     );
+  });
+
+  it('evaluates only work saved before the time limit and records the rest as unanswered (no extra AI calls)', async () => {
+    const timedOut = { ...mockInterview, status: 'COMPLETED', completionReason: 'TIME_EXPIRED' };
+    let capturedPrompt = '';
+    let geminiCalls = 0;
+    mock.method(gemini.models, 'generateContent', async (args: any) => {
+      geminiCalls++;
+      capturedPrompt = args.contents;
+      return {
+        text: JSON.stringify({
+          summary: 'Answered one question well before time ran out.',
+          questions: [{
+            questionId: mockQuestions[0].id, orderIndex: 1,
+            correctnessScore: 90, completenessScore: 90, reasoningScore: 90, clarityScore: 90,
+            summary: 'Good.', strengths: ['Clear.'], improvements: ['More depth.'], sampleAnswer: 'Model.',
+          }],
+          crossInterviewAnalysis: { recurringStrengths: [], weakTopics: [], repeatedErrors: [], recommendations: [], practiceAreas: [] },
+        }),
+      };
+    });
+    mock.method(db.orm.public.Interview, 'first', async () => timedOut);
+    mock.method(db.orm.public.Question, 'where', () => ({ all: async () => mockQuestions }));
+    mock.method(db.orm.public.Answer, 'where', () => ({ all: async () => [mockAnswers[0]] }));
+
+    let savedPayload: any = null;
+    mock.method(db, 'transaction', async (cb: any) => cb({
+      orm: { public: {
+        Interview: { where: () => ({ update: async () => {} }) },
+        EvaluationReport: {
+          where: () => ({
+            // No report exists at claim time; afterwards the saved one is read back.
+            first: async () => (savedPayload ? { id: 'rep-t', interviewId: timedOut.id, status: 'COMPLETED', reportPayload: savedPayload, createdAt: new Date(), updatedAt: new Date() } : null),
+            update: async (data: any) => { if (data.reportPayload) savedPayload = data.reportPayload; },
+          }),
+          create: async (data: any) => ({ ...data, id: 'rep-t', updatedAt: new Date() }),
+        },
+        Evaluation: { where: () => ({ first: async () => null, update: async () => {} }), create: async () => {} },
+      } },
+    }));
+
+    await evaluationService.generateEvaluationReport(timedOut.id);
+
+    assert.strictEqual(geminiCalls, 1);
+    assert.ok(capturedPrompt.includes(mockQuestions[0].id));
+    assert.ok(!capturedPrompt.includes(mockQuestions[1].id), 'unanswered questions are not sent to the model');
+    const unanswered = savedPayload.questions.filter((q: any) => q.unanswered);
+    assert.deepStrictEqual(unanswered.map((q: any) => q.questionId), [mockQuestions[1].id, mockQuestions[2].id]);
+    assert.ok(unanswered.every((q: any) => q.overallScore === 0));
+    assert.deepStrictEqual(savedPayload.questions.map((q: any) => q.orderIndex), [1, 2, 3]);
+  });
+
+  it('carries each question\'s stored origin and validated sources into the saved report', async () => {
+    const withSources = mockQuestions.map((q, i) => i === 0
+      ? { ...q, origin: 'SUBJECT', category: 'TECHNICAL', sources: [
+          { id: 'S1', title: 'PostgreSQL docs', url: 'https://www.postgresql.org/docs/current/wal-intro.html', domain: 'postgresql.org', retrievedAt: 't' },
+          { id: 'S2', title: 'bad', url: 'javascript:alert(1)' },
+        ] }
+      : { ...q, origin: 'CURATED' });
+    mock.method(gemini.models, 'generateContent', async () => ({
+      text: JSON.stringify({
+        summary: 'ok',
+        questions: withSources.map((q, i) => ({
+          questionId: q.id, orderIndex: i + 1, correctnessScore: 80, completenessScore: 80, reasoningScore: 80, clarityScore: 80,
+          summary: 's', strengths: [], improvements: [], sampleAnswer: 'm',
+        })),
+        crossInterviewAnalysis: { recurringStrengths: [], weakTopics: [], repeatedErrors: [], recommendations: [], practiceAreas: [] },
+      }),
+    }));
+    mock.method(db.orm.public.Interview, 'first', async () => mockInterview);
+    mock.method(db.orm.public.Question, 'where', () => ({ all: async () => withSources }));
+    mock.method(db.orm.public.Answer, 'where', () => ({ all: async () => mockAnswers }));
+    let savedPayload: any = null;
+    mock.method(db, 'transaction', async (cb: any) => cb({
+      orm: { public: {
+        Interview: { where: () => ({ update: async () => {} }) },
+        EvaluationReport: {
+          where: () => ({
+            first: async () => (savedPayload ? { id: 'rep', interviewId: mockInterview.id, status: 'COMPLETED', reportPayload: savedPayload, createdAt: new Date(), updatedAt: new Date() } : null),
+            update: async (data: any) => { if (data.reportPayload) savedPayload = data.reportPayload; },
+          }),
+          create: async (data: any) => ({ ...data, id: 'rep', updatedAt: new Date() }),
+        },
+        Evaluation: { where: () => ({ first: async () => null, update: async () => {} }), create: async () => {} },
+      } },
+    }));
+
+    await evaluationService.generateEvaluationReport(mockInterview.id);
+    const [first, second] = savedPayload.questions;
+    assert.strictEqual(first.origin, 'SUBJECT');
+    assert.deepStrictEqual(first.sources.map((s: any) => s.id), ['S1'], 'unsafe links are dropped');
+    assert.strictEqual(second.origin, 'CURATED');
+    assert.strictEqual(second.sources, undefined, 'no sources shown without real provenance');
+  });
+
+  it('refuses to build a report for a timed-out interview with no saved answers, without calling the model', async () => {
+    const generate = mock.method(gemini.models, 'generateContent', async () => ({ text: '{}' }));
+    mock.method(db.orm.public.Interview, 'first', async () => ({ ...mockInterview, status: 'COMPLETED', completionReason: 'TIME_EXPIRED' }));
+    mock.method(db.orm.public.Question, 'where', () => ({ all: async () => mockQuestions }));
+    mock.method(db.orm.public.Answer, 'where', () => ({ all: async () => [] }));
+    await assert.rejects(() => evaluationService.generateEvaluationReport(mockInterview.id), (err: any) => err.code === 'BAD_REQUEST');
+    assert.strictEqual(generate.mock.callCount(), 0);
   });
 
   it('generates report in exactly one batched Gemini request and persists it', async () => {

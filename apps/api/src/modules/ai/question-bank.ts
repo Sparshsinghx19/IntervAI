@@ -30,7 +30,7 @@ export const questionBank: QuestionBankEntry[] = [
   // DSA - HARD (5)
   { id: 5, topic: 'DSA', subtopic: 'Dynamic Programming', difficulty: 'HARD', questionText: 'Explain the knapsack problem and how dynamic programming can be used to solve it optimally.', tags: ['dp', 'optimization'], type: 'THEORY' },
   { id: 37, topic: 'DSA', subtopic: 'Graphs', difficulty: 'HARD', questionText: 'Explain Dijkstra\'s algorithm for finding the shortest path in a graph.', tags: ['graph', 'shortest-path'], type: 'THEORY' },
-  { id: 38, topic: 'DSA', subtopic: 'Strings', difficulty: 'HARD', questionText: 'Describe an algorithm to find the longest palindromic substring in a string.', tags: ['string', 'dp'], type: 'CODING' },
+  { id: 38, topic: 'DSA', subtopic: 'Strings', difficulty: 'HARD', questionText: 'Describe an algorithm to find the longest palindromic substring in a string.', tags: ['string', 'dp'], type: 'THEORY' },
   { id: 39, topic: 'DSA', subtopic: 'Trees', difficulty: 'HARD', questionText: 'How do you serialize and deserialize a binary tree?', tags: ['tree', 'serialization'], type: 'THEORY' },
   { id: 40, topic: 'DSA', subtopic: 'Heaps', difficulty: 'HARD', questionText: 'Explain how to find the median of a stream of integers.', tags: ['heap', 'stream'], type: 'THEORY' },
 

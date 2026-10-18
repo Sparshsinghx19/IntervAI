@@ -3,10 +3,20 @@ import assert from 'node:assert';
 import { evaluationService } from './evaluation.service.js';
 import { aiEvaluatorService } from './ai-evaluator.service.js';
 import { db } from '../../prisma/db.js';
+import { interviewLifecycle } from '../interviews/interview-lifecycle.service.js';
+
+/** These suites use hand-built ORM mocks; the interview clock is covered in interview-lifecycle.test.ts. */
+const stubInterviewLifecycle = () => {
+  mock.method(interviewLifecycle, 'expireIfDue', async () => false);
+  mock.method(interviewLifecycle, 'assertOpen', async () => undefined);
+  mock.method(interviewLifecycle, 'lockOpenForSubmission', async () => undefined);
+  mock.method(interviewLifecycle, 'expireOverdueForOwner', async () => undefined);
+};
 
 describe('Evaluation Service - Integration & State Transitions', () => {
   beforeEach(() => {
     mock.restoreAll();
+    stubInterviewLifecycle();
   });
 
   const mockInterview = {

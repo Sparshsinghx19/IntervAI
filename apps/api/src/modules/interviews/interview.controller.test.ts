@@ -1,4 +1,5 @@
 import { describe, it, mock, beforeEach } from 'node:test';
+import { interviewResearchService } from './interview-research.service.js';
 import assert from 'node:assert';
 import { interviewController } from './interview.controller.js';
 import { interviewService } from './interview.service.js';
@@ -6,6 +7,8 @@ import { interviewService } from './interview.service.js';
 describe('Interview Controller - createInterview', () => {
   beforeEach(() => {
     mock.restoreAll();
+    // Interview creation must never reach live web research in tests.
+    mock.method(interviewResearchService, 'research', async () => ({ status: 'unavailable', retrievedAt: '2026-10-18T00:00:00.000Z', terms: [], reason: 'stubbed in tests' }) as any);
   });
 
   const createMockRes = () => {

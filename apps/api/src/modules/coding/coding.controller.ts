@@ -36,6 +36,9 @@ export const codingController = {
       if (err.code === 'NOT_FOUND') {
         return res.status(404).json({ error: err.message });
       }
+      if (err.code === 'CONFLICT') {
+        return res.status(409).json({ error: err.message, reason: err.reason ?? 'COMPLETED' });
+      }
       if (err.code === 'BAD_REQUEST') {
         return res.status(400).json({ error: err.message });
       }
@@ -89,6 +92,9 @@ export const codingController = {
       if (err.code === 'NOT_FOUND') {
         return res.status(404).json({ error: err.message });
       }
+      if (err.code === 'CONFLICT') {
+        return res.status(409).json({ error: err.message, reason: err.reason ?? 'COMPLETED' });
+      }
       if (err.code === 'BAD_REQUEST') {
         return res.status(400).json({ error: err.message });
       }
@@ -141,6 +147,9 @@ export const codingController = {
       }
       if (err.code === 'NOT_FOUND') {
         return res.status(404).json({ error: err.message });
+      }
+      if (err.code === 'CONFLICT') {
+        return res.status(409).json({ error: err.message, reason: err.reason ?? 'COMPLETED' });
       }
       if (err.code === 'BAD_REQUEST') {
         return res.status(400).json({ error: err.message });

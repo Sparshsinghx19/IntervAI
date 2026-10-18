@@ -19,6 +19,7 @@
     "argon2": "^0.45.1",
     "cors": "^2.8.6",
     "express": "^5.2.1",
+    "mammoth": "^1.13.0",
     "temporal-polyfill": "^1.0.5"
   },
   "devDependencies": {

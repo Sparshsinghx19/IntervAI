@@ -48,7 +48,14 @@ export async function submitAnswerAndEvaluate(params: {
       body: JSON.stringify({ answerText: trimmed }),
     });
 
-    // 409 Conflict means answer was already recorded in DB
+    // 409 Conflict means answer was already recorded in DB, unless the time limit ended
+    if (answerRes.status === 409 && (await readConflict(answerRes)).expired) {
+      return {
+        success: false,
+        stage: 'save_error',
+        error: 'The interview time limit has ended. This answer was not submitted.',
+      };
+    }
     if (!answerRes.ok && answerRes.status !== 409) {
       return {
         success: false,
@@ -163,6 +170,16 @@ export async function fetchExistingEvaluation(params: {
 export interface SaveAnswerResult {
   success: boolean;
   error?: string;
+  /** The interview's time limit has ended; the answer was NOT saved. */
+  expired?: boolean;
+}
+
+/** A 409 means "already completed" (answer on record) unless the time limit ended (answer refused). */
+async function readConflict(res: Response): Promise<{ expired: boolean; error?: string }> {
+  const data = await res.json().catch(() => ({}));
+  return data?.reason === 'TIME_EXPIRED'
+    ? { expired: true, error: typeof data?.error === 'string' ? data.error : 'The interview time limit has ended.' }
+    : { expired: false };
 }
 
 export async function saveInterviewAnswer(params: {
@@ -189,8 +206,12 @@ export async function saveInterviewAnswer(params: {
       body: JSON.stringify({ answerText: trimmed }),
     });
 
-    if (res.ok || res.status === 409) {
+    if (res.ok) {
       return { success: true };
+    }
+    if (res.status === 409) {
+      const conflict = await readConflict(res);
+      return conflict.expired ? { success: false, expired: true, error: conflict.error } : { success: true };
     }
 
     const data = await res.json().catch(() => ({}));
@@ -237,6 +258,11 @@ export function formatSafeEvaluationErrorMessage(rawError: unknown, statusCode?:
   }
 
   const combined = `${message} ${statusStr}`.toLowerCase();
+
+  // 0. Timed-out interview with nothing submitted: say so plainly (it is not a service problem).
+  if (combined.includes('no answers were submitted before the time limit')) {
+    return 'The time limit ended before any answers were submitted, so there is nothing to evaluate for this interview.';
+  }
 
   // 1. 503 / temporary provider unavailability
   if (

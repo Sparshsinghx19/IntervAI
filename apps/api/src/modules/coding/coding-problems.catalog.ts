@@ -360,3 +360,32 @@ export function findCodingProblemForQuestion(questionText: string, slug?: string
 
   return null;
 }
+
+export type QuestionKind = 'THEORY' | 'CODING' | 'SYSTEM_DESIGN';
+
+interface QuestionLike {
+  type?: string | null;
+  questionText?: string | null;
+  codingProblemSlug?: string | null;
+}
+
+/** Catalog slug when the question is a coding problem the runner can execute, otherwise null. */
+export function runnableProblemSlug(q: QuestionLike): string | null {
+  return findCodingProblemForQuestion(q.questionText ?? '', q.codingProblemSlug)?.slug ?? null;
+}
+
+/**
+ * The type the session, completion and evaluation rules use. A question stored
+ * as CODING without a runnable catalog problem cannot be executed or submitted
+ * as code, so it is answered (and counted, and evaluated) as a text question.
+ */
+export function effectiveQuestionType(q: QuestionLike): QuestionKind {
+  if (q.type === 'CODING') return runnableProblemSlug(q) ? 'CODING' : 'THEORY';
+  return q.type === 'SYSTEM_DESIGN' ? 'SYSTEM_DESIGN' : 'THEORY';
+}
+
+/** Type and slug to store for a new question: CODING only when a runnable problem backs it. */
+export function classifyNewQuestion(q: QuestionLike): { type: QuestionKind; codingProblemSlug: string | null } {
+  const type = effectiveQuestionType(q);
+  return { type, codingProblemSlug: type === 'CODING' ? runnableProblemSlug(q) : null };
+}

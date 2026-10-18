@@ -5,6 +5,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { apiFetch } from '@/lib/api-client';
 import { RequireAuth } from '@/components/auth/RequireAuth';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { questionOriginLabel, researchNote } from '@/lib/adaptive-setup';
+import { CODING_UNAVAILABLE_NOTE, workspaceFor } from '@/lib/workspace-mode';
+import { QuestionSource, SourcesDisclosure } from '@/components/interview/SourcesDisclosure';
 import {
   answerTextFor,
   countAnswered,
@@ -17,6 +20,16 @@ import {
   savedAnswersFromProgress,
   SnapshotStore,
 } from '@/lib/interview-resume';
+import {
+  clockOffsetMs,
+  finalizeInterview,
+  formatRemaining,
+  InterviewTiming,
+  parseTiming,
+  remainingMs,
+  startInterviewClock,
+  timeWarning,
+} from '@/lib/interview-timer';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   SkipForward,
@@ -54,6 +67,15 @@ interface QuestionItem {
   id: string | number;
   questionText: string;
   type?: 'THEORY' | 'CODING' | 'SYSTEM_DESIGN';
+  /** Runnable coding problem for CODING questions (null when there is none). */
+  codingProblemSlug?: string | null;
+  /** Planned as coding but not runnable, so it is answered in text. */
+  codingUnavailable?: boolean;
+  /** Where the question came from (curated bank, resume, follow-up) and its role in the plan. */
+  origin?: string | null;
+  category?: string | null;
+  /** Stored web sources that informed this question (only when research supported it). */
+  sources?: QuestionSource[] | null;
   difficulty?: string;
   focusArea?: string;
   orderIndex?: number;
@@ -78,6 +100,16 @@ function InterviewSessionContent() {
   const [progress, setProgress] = useState<InterviewProgress | null>(null);
   const [resumeStore, setResumeStore] = useState<SnapshotStore | null>(null);
 
+  // Interview time limit. The deadline comes from the server; this clock only displays it.
+  const [timing, setTiming] = useState<InterviewTiming | null>(null);
+  const [clockOffset, setClockOffset] = useState(0);
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  const [timeUp, setTimeUp] = useState(false);
+  const [timeUpNotice, setTimeUpNotice] = useState('');
+  // Whether this interview's plan used web research (summary only; sources live on each question).
+  const [research, setResearch] = useState<{ status: string; sourceCount: number } | null>(null);
+  const timeUpHandled = useRef(false);
+
   // Config State
   const [questions, setQuestions] = useState<QuestionItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(!id);
@@ -86,7 +118,6 @@ function InterviewSessionContent() {
   const [interviewType, setInterviewType] = useState<string>('');
   const [interviewDifficulty, setInterviewDifficulty] = useState<string>('MEDIUM');
   const [focusArea, setFocusArea] = useState<string>('');
-  const [mode, setMode] = useState<'text' | 'code'>('text');
 
   // Session State
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -178,6 +209,7 @@ function InterviewSessionContent() {
         setInterviewType(interviewData.type || '');
         setInterviewDifficulty(interviewData.difficulty || 'MEDIUM');
         setFocusArea(interviewData.focusArea || '');
+        setResearch(interviewData.research ?? null);
 
         const store = userId ? createSnapshotStore(browserStorage(), resumeStorageKey(userId, id)) : null;
         setResumeStore(store);
@@ -185,6 +217,10 @@ function InterviewSessionContent() {
         // If interview was already completed, automatically restore or display the final report
         if (interviewData.status === 'COMPLETED') {
           store?.clear();
+          if (interviewData.completionReason === 'TIME_EXPIRED') {
+            setTimeUp(true);
+            setTimeUpNotice('The time limit for this interview ended. Only answers submitted before the deadline are evaluated.');
+          }
           setIsInterviewComplete(true);
           setAiStatus('COMPLETED');
           loadEvaluationReport();
@@ -214,6 +250,15 @@ function InterviewSessionContent() {
           setAnswer(answerTextFor(String(loadedQuestions[startIndex].id), progressResult.progress, snapshot, saved));
         } else if (loadedQuestions.length > 0) {
           setAnswer(saved[String(loadedQuestions[0].id)] ?? '');
+        }
+
+        // Start the interview clock (idempotent: a refresh or resume keeps the original deadline).
+        const requestedAt = Date.now();
+        const startedTiming =
+          (await startInterviewClock(id, { apiUrl })) ?? parseTiming(progressResult.progress.timing ?? interviewData.timing);
+        if (startedTiming) {
+          setTiming(startedTiming);
+          setClockOffset(clockOffsetMs(startedTiming, requestedAt));
         }
       } catch (err) {
         console.error('Session load error:', err);
@@ -256,6 +301,63 @@ function InterviewSessionContent() {
     if (isInterviewComplete) resumeStore?.clear();
   }, [isInterviewComplete, resumeStore]);
 
+  // Tick once a second while a timed interview is running.
+  const hasDeadline = Boolean(timing?.deadlineAt);
+  useEffect(() => {
+    if (!hasDeadline || isInterviewComplete) return;
+    const interval = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, [hasDeadline, isInterviewComplete]);
+
+  const remaining = remainingMs(timing, clockOffset, nowMs);
+  const warning = timeWarning(remaining);
+
+  /**
+   * Time is up: stop taking answers, let the server close the interview
+   * (exactly once), then build the report from what was submitted.
+   * Unsent text is reported honestly as not submitted.
+   */
+  const handleTimeUp = async () => {
+    if (timeUpHandled.current || !id) return;
+    timeUpHandled.current = true;
+    setTimeUp(true);
+    setIsSubmitting(false);
+
+    const snapshot = resumeStore?.get();
+    const unsent = new Set(
+      Object.entries(snapshot?.answerDrafts ?? {})
+        .filter(([qid, draft]) => draft.text.trim() && (draft.text.trim() !== (savedAnswersByQuestion[qid] ?? '').trim()))
+        .map(([qid]) => qid)
+    );
+    // resumeQuestionId is the current question's id (declared above this handler).
+    if (resumeQuestionId && answer.trim() && answer.trim() !== (savedAnswersByQuestion[resumeQuestionId] ?? '').trim()) {
+      unsent.add(resumeQuestionId);
+    }
+    setTimeUpNotice(
+      unsent.size > 0
+        ? `Time's up. Answers you submitted before the deadline are being evaluated. Unsent text on ${unsent.size} question${unsent.size === 1 ? '' : 's'} was not submitted and is not part of the report.`
+        : "Time's up. Answers you submitted before the deadline are being evaluated."
+    );
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+    // The server's clock decides; if it says a moment remains, wait and ask again.
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const outcome = await finalizeInterview(id, { apiUrl });
+      if (outcome.result === 'finalized') break;
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+
+    setIsInterviewComplete(true);
+    setAiStatus('COMPLETED');
+    loadEvaluationReport();
+  };
+
+  useEffect(() => {
+    if (warning === 'expired' && !isInterviewComplete) void handleTimeUp();
+    // handleTimeUp reads current state; it runs at most once (guarded by a ref).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [warning, isInterviewComplete]);
+
   // 2. Timer
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -271,8 +373,9 @@ function InterviewSessionContent() {
 
   const currentQuestion = questions[currentIndex];
   const currentQuestionId = currentQuestion ? String(currentQuestion.id) : '';
-  const currentQuestionType = currentQuestion?.type || 'THEORY';
-  const isCodingQuestion = currentQuestionType === 'CODING';
+  // The workspace follows the current question's type (never a previous question's mode).
+  const workspace = workspaceFor(currentQuestion);
+  const isCodingQuestion = workspace.mode === 'code';
   const isFinalQuestion = questions.length > 0 && currentIndex === questions.length - 1;
   const answeredCount = progress ? countAnswered(questions, progress) : 0;
 
@@ -309,17 +412,6 @@ function InterviewSessionContent() {
     );
   };
 
-  // Synchronize workspace mode based on the current question's explicit type:
-  // For THEORY (and default): open Text Mode by default, no C++ starter code or Coding IDE toggle.
-  // For CODING: show Monaco Coding IDE with C++, Python, Java.
-  useEffect(() => {
-    if (currentQuestion) {
-      const qType = currentQuestion.type || 'THEORY';
-      // Synchronize workspace mode based on current question type
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setMode(qType === 'CODING' ? 'code' : 'text');
-    }
-  }, [currentIndex, currentQuestion]);
 
 
   const formatTime = (totalSeconds: number) => {
@@ -427,6 +519,10 @@ function InterviewSessionContent() {
 
     if (!saveResult.success) {
       setIsSubmitting(false);
+      if (saveResult.expired) {
+        void handleTimeUp();
+        return;
+      }
       setEvaluationStage('save_error');
       setEvaluationError(saveResult.error || 'Failed to save your response to the server. Please try again.');
       return;
@@ -511,6 +607,10 @@ function InterviewSessionContent() {
 
     if (!saveResult.success) {
       setIsSubmitting(false);
+      if (saveResult.expired) {
+        void handleTimeUp();
+        return;
+      }
       setEvaluationStage('save_error');
       setEvaluationError(saveResult.error || 'Failed to save code response.');
       return;
@@ -777,55 +877,68 @@ function InterviewSessionContent() {
             )}
           </div>
 
-          {/* Center: Mode Switcher (only for CODING questions) or Question Format Badge */}
+          {/* Center: the question's format (the workspace below follows it automatically) */}
           <div className="flex items-center gap-2">
-            {isCodingQuestion ? (
-              <div className="flex bg-white/5 p-1 rounded-lg border border-white/10">
-                <button
-                  type="button"
-                  onClick={() => setMode('text')}
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all ${
-                    mode === 'text'
-                      ? 'bg-brand-500 text-white shadow-md shadow-brand-500/20 font-semibold'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <Type className="w-3.5 h-3.5" /> Text Mode
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMode('code')}
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all ${
-                    mode === 'code'
-                      ? 'bg-brand-500 text-white shadow-md shadow-brand-500/20 font-semibold'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <Code2 className="w-3.5 h-3.5" /> Coding IDE
-                </button>
-              </div>
-            ) : (
-              <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-slate-400 font-medium">
-                <span>Format:</span>
-                <span className="text-white capitalize font-semibold">
-                  {currentQuestionType === 'SYSTEM_DESIGN' ? 'System Design' : 'Theory / Conceptual'}
-                </span>
-              </div>
-            )}
+            <div
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-slate-400 font-medium"
+              data-testid="question-format"
+            >
+              {isCodingQuestion ? <Code2 className="w-3.5 h-3.5" aria-hidden="true" /> : <Type className="w-3.5 h-3.5" aria-hidden="true" />}
+              <span>Format:</span>
+              <span className="text-white font-semibold">{workspace.format}</span>
+            </div>
           </div>
 
           {/* Right: Timer & Secondary AI Status Pill */}
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-slate-400 font-mono">
-              <Clock className="w-3.5 h-3.5 text-brand-400" />
-              <span>{formatTime(timerSeconds)}</span>
-            </div>
+            {remaining !== null ? (
+              <div
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-mono ${
+                  warning === 'one-minute' || warning === 'expired'
+                    ? 'bg-rose-500/10 border-rose-400/30 text-rose-200'
+                    : warning === 'five-minutes'
+                    ? 'bg-amber-500/10 border-amber-400/30 text-amber-200'
+                    : 'bg-white/5 border-white/10 text-slate-300'
+                }`}
+                title="Time remaining in this interview"
+              >
+                <Clock className="w-3.5 h-3.5" aria-hidden="true" />
+                <span className="sr-only">Time remaining: </span>
+                <span data-testid="time-remaining">{formatRemaining(remaining)}</span>
+              </div>
+            ) : (
+              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-slate-400 font-mono">
+                <Clock className="w-3.5 h-3.5 text-brand-400" />
+                <span>{formatTime(timerSeconds)}</span>
+              </div>
+            )}
 
             <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-slate-300">
               <BrainCircuit className={`w-3.5 h-3.5 ${aiStatus === 'EVALUATING' ? 'text-cyan-400 animate-spin' : 'text-brand-400'}`} />
               <span className="hidden md:inline">{aiStatus === 'LISTENING' ? 'AI: Listening' : aiStatus === 'EVALUATING' ? 'AI: Analyzing...' : 'Completed'}</span>
             </div>
           </div>
+        </div>
+
+        {/* Time-limit warnings (announced politely to screen readers) */}
+        <div aria-live="polite" className="contents">
+          {!isInterviewComplete && (warning === 'five-minutes' || warning === 'one-minute') && (
+            <div
+              role="status"
+              className={`mb-3 rounded-lg border px-4 py-2 text-sm ${
+                warning === 'one-minute' ? 'border-rose-400/30 bg-rose-500/10 text-rose-100' : 'border-amber-400/30 bg-amber-500/10 text-amber-100'
+              }`}
+            >
+              {warning === 'one-minute'
+                ? 'Less than 1 minute left. Submit your current answer now; unsent text is not evaluated.'
+                : 'About 5 minutes left. Only submitted answers count toward your report.'}
+            </div>
+          )}
+          {timeUp && timeUpNotice && (
+            <div role="status" className="mb-3 rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-slate-200">
+              {timeUpNotice}
+            </div>
+          )}
         </div>
 
         {/* Content View: Consolidated Evaluation Report OR Coding Workspace OR Full-Viewport Theory Workspace */}
@@ -837,7 +950,7 @@ function InterviewSessionContent() {
             onRetry={loadEvaluationReport}
             onReturnToSetup={() => router.push('/interview')}
           />
-        ) : isCodingQuestion && mode === 'code' ? (
+        ) : isCodingQuestion ? (
           <div className="flex-1 min-h-0 h-full flex flex-col overflow-hidden">
             <CodingWorkspace
               interviewId={id as string}
@@ -873,6 +986,11 @@ function InterviewSessionContent() {
                     <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${getDifficultyBadge(interviewDifficulty)}`}>
                       {interviewDifficulty}
                     </span>
+                    {questionOriginLabel(currentQuestion?.origin, currentQuestion?.category, Boolean(currentQuestion?.sources?.length)) && (
+                      <span className="text-xs text-cyan-200 font-medium bg-cyan-500/10 px-2.5 py-0.5 rounded-full border border-cyan-400/20">
+                        {questionOriginLabel(currentQuestion?.origin, currentQuestion?.category, Boolean(currentQuestion?.sources?.length))}
+                      </span>
+                    )}
                     {focusArea && (
                       <span className="text-xs text-slate-400 font-medium bg-white/5 px-2.5 py-0.5 rounded-full border border-white/10">
                         {focusArea}
@@ -888,6 +1006,12 @@ function InterviewSessionContent() {
                 <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold text-white leading-snug tracking-tight break-words">
                   {currentQuestion?.questionText}
                 </h2>
+                <SourcesDisclosure sources={currentQuestion?.sources} className="mt-3" />
+                {workspace.codingUnavailable && (
+                  <p role="note" className="mt-3 rounded-lg border border-amber-400/25 bg-amber-500/10 px-3 py-2 text-xs leading-relaxed text-amber-100">
+                    {CODING_UNAVAILABLE_NOTE}
+                  </p>
+                )}
               </Card>
 
               {/* Answer Editor Card (Primary Focus, Flexes Vertically) */}
@@ -1057,10 +1181,16 @@ function InterviewSessionContent() {
 
                 <div className="flex justify-between items-center pt-2 border-t border-white/5 text-xs">
                   <span className="text-slate-400 flex items-center gap-1.5 font-medium">
-                    <Clock className="w-3.5 h-3.5 text-brand-400" /> Session Timer
+                    <Clock className="w-3.5 h-3.5 text-brand-400" /> {remaining !== null ? 'Time Remaining' : 'Session Timer'}
                   </span>
-                  <span className="text-white font-mono text-sm font-semibold">{formatTime(timerSeconds)}</span>
+                  <span className="text-white font-mono text-sm font-semibold">
+                    {remaining !== null ? formatRemaining(remaining) : formatTime(timerSeconds)}
+                  </span>
                 </div>
+
+                {researchNote(research) && (
+                  <p className="text-[11px] leading-relaxed text-slate-400 pt-2 border-t border-white/5">{researchNote(research)}</p>
+                )}
 
                 <div className="flex justify-between items-center text-xs text-slate-400 pt-1 border-t border-white/5">
                   <span>Interview Type</span>

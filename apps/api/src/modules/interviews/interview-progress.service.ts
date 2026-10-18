@@ -1,4 +1,6 @@
 import { db } from '../../prisma/db.js';
+import { interviewLifecycle, InterviewTiming, toTiming } from './interview-lifecycle.service.js';
+import { effectiveQuestionType } from '../coding/coding-problems.catalog.js';
 
 export const IN_PROGRESS_DEFAULT_LIMIT = 5;
 export const IN_PROGRESS_MAX_LIMIT = 10;
@@ -25,6 +27,7 @@ export interface InProgressInterview {
 export interface InterviewProgress {
   interviewId: string;
   status: string;
+  timing: InterviewTiming;
   answers: Array<{ questionId: string; answerText: string; submittedAt: string }>;
   /** Latest code submission per coding question. */
   codeSubmissions: Array<{
@@ -40,6 +43,8 @@ export interface InterviewProgress {
 
 interface QuestionActivity {
   type: string | null;
+  questionText?: string;
+  codingProblemSlug?: string | null;
   answer: { submittedAt: unknown } | null;
   submissions: Array<{ createdAt: unknown }>;
 }
@@ -61,7 +66,9 @@ const toMs = (value: unknown): number => {
  */
 export function countAnsweredQuestions(questions: QuestionActivity[]): number {
   return questions.filter((q) =>
-    q.type === 'CODING' ? q.submissions.length > 0 : q.answer !== null && q.answer !== undefined
+    effectiveQuestionType(q) === 'CODING'
+      ? q.submissions.length > 0
+      : q.answer !== null && q.answer !== undefined
   ).length;
 }
 
@@ -82,13 +89,15 @@ export const interviewProgressService = {
    * legacy interviews never match. No answer text or code is returned.
    */
   listInProgress: async (ownerId: string, limit: number = IN_PROGRESS_DEFAULT_LIMIT): Promise<InProgressInterview[]> => {
+    // Timed interviews whose deadline passed are finished, not resumable.
+    await interviewLifecycle.expireOverdueForOwner(ownerId);
     const rows = await db.orm.public.Interview
       .where((i) => i.ownerId.eq(ownerId))
       .where((i) => i.status.in([...RESUMABLE_STATUSES]))
       .select('id', 'type', 'difficulty', 'focusArea', 'questionCount', 'status', 'createdAt', 'updatedAt')
       .include('questions', (q) =>
         q
-          .select('id', 'type')
+          .select('id', 'type', 'questionText', 'codingProblemSlug')
           .include('answer', (a) => a.select('submittedAt'))
           .include('submissions', (s) => s.select('createdAt'))
       )
@@ -100,6 +109,8 @@ export const interviewProgressService = {
       .map((row: any) => {
         const questions: QuestionActivity[] = (row.questions ?? []).map((q: any) => ({
           type: q.type ?? null,
+          questionText: q.questionText ?? '',
+          codingProblemSlug: q.codingProblemSlug ?? null,
           answer: q.answer ?? null,
           submissions: q.submissions ?? [],
         }));
@@ -124,6 +135,7 @@ export const interviewProgressService = {
 
   /** Saved answers and latest code per question for one interview (ownership is checked by the route). */
   getProgress: async (interviewId: string): Promise<InterviewProgress | null> => {
+    await interviewLifecycle.expireIfDue(interviewId);
     const interview = await db.orm.public.Interview.first({ id: interviewId });
     if (!interview) return null;
 
@@ -147,6 +159,7 @@ export const interviewProgressService = {
     return {
       interviewId,
       status: (interview as any).status,
+      timing: toTiming(interview),
       answers: (answers as any[]).map((a) => ({
         questionId: a.questionId,
         answerText: a.answerText,

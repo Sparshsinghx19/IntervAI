@@ -1,9 +1,12 @@
+import { classifyNewQuestion } from '../coding/coding-problems.catalog.js';
+
 export const questionGenerationService = {
   generateQuestions: (focusArea: string, difficulty: string, count: number, interviewId: string) => {
     const questions = [];
     
     const banks: Record<string, string[]> = {
-      'DSA': ['Reverse a linked list', 'Find the middle of a linked list', 'Detect a cycle in a linked list', 'Merge two sorted lists', 'Remove Nth node from end of list', 'Valid Parentheses'],
+      // Coding prompts here must match a runnable problem in the coding catalog.
+      'DSA': ['Reverse a linked list', 'Detect a cycle in a linked list', 'Valid palindrome', 'Two sum in a sorted array', 'Coin change'],
       'OS': ['What is a process vs thread?', 'Explain virtual memory', 'What is a deadlock and how to prevent it?', 'Explain context switching', 'What is paging?'],
       'DBMS': ['What is ACID?', 'Explain normalization forms', 'What are clustered vs non-clustered indexes?', 'Explain SQL joins', 'What is a transaction?'],
       'CN': ['What is the OSI model?', 'Explain TCP vs UDP', 'How does DNS work?', 'What is a subnet mask?', 'Explain the TCP 3-way handshake'],
@@ -30,28 +33,15 @@ export const questionGenerationService = {
 
     for (let i = 0; i < count; i++) {
       const qTextBase = baseQuestions[i % baseQuestions.length!];
-      let slug: string | null = null;
-      if (questionType === 'CODING') {
-        const lower = qTextBase.toLowerCase();
-        if (lower.includes('reverse') && lower.includes('linked list')) {
-          slug = 'reverse-linked-list';
-        } else if (lower.includes('cycle') && lower.includes('linked list')) {
-          slug = 'linked-list-cycle';
-        } else if (lower.includes('palindrome')) {
-          slug = 'valid-palindrome';
-        } else if (lower.includes('two sum')) {
-          slug = 'two-sum-ii-input-array-is-sorted';
-        } else if (lower.includes('coin change')) {
-          slug = 'coin-change';
-        }
-      }
+      // A question is CODING only when the runner has a problem definition for it.
+      const kind = questionType === 'CODING' ? classifyNewQuestion({ type: 'CODING', questionText: qTextBase }) : { type: questionType, codingProblemSlug: null };
 
       questions.push({
         interviewId,
         questionText: `${qTextBase} (Difficulty: ${difficulty})`,
         orderIndex: i + 1,
-        type: questionType,
-        codingProblemSlug: slug,
+        type: kind.type,
+        codingProblemSlug: kind.codingProblemSlug,
       });
     }
     return questions;

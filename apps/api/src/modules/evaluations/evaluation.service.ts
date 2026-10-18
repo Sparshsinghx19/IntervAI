@@ -1,5 +1,8 @@
 import { db } from '../../prisma/db.js';
 import { aiEvaluatorService } from './ai-evaluator.service.js';
+import { interviewLifecycle } from '../interviews/interview-lifecycle.service.js';
+import { safeSources } from '../interviews/interview.service.js';
+import { effectiveQuestionType } from '../coding/coding-problems.catalog.js';
 import { EvaluationResponse, EvaluationReportResponse } from './evaluation.types.js';
 
 export function formatEvaluationReportResponse(report: any): EvaluationReportResponse {
@@ -291,7 +294,8 @@ export const evaluationService = {
   },
 
   generateEvaluationReport: async (interviewId: string): Promise<EvaluationReportResponse> => {
-    // Phase 1: Validate Interview
+    // Phase 1: Validate Interview (finalizing it first if its time limit has passed)
+    await interviewLifecycle.expireIfDue(interviewId);
     const interview = await db.orm.public.Interview.first({ id: interviewId });
     if (!interview) {
       const error = new Error('Interview not found');
@@ -312,8 +316,9 @@ export const evaluationService = {
       throw error;
     }
 
-    const theoryQuestions = questions.filter((q) => q.type !== 'CODING');
-    const codingQuestions = questions.filter((q) => q.type === 'CODING');
+    // Unrunnable "coding" questions were answered in text, so they are evaluated as text.
+    const theoryQuestions = questions.filter((q) => effectiveQuestionType(q) !== 'CODING');
+    const codingQuestions = questions.filter((q) => effectiveQuestionType(q) === 'CODING');
 
     // Retrieve theory answers
     const theoryQuestionIds = theoryQuestions.map((q) => q.id);
@@ -347,8 +352,17 @@ export const evaluationService = {
     const totalAnswered = answersByQuestionId.size + latestSubmissionByQuestionId.size;
     const unansweredTheory = theoryQuestions.filter(q => !answersByQuestionId.has(q.id));
     const unsubmittedCoding = codingQuestions.filter(q => !latestSubmissionByQuestionId.has(q.id));
+    // When the time limit ended the interview, only work saved before the deadline is evaluated;
+    // unanswered questions are recorded as unanswered (score 0) without any model call.
+    const timedOut = interview.status === 'COMPLETED' && interview.completionReason === 'TIME_EXPIRED';
 
-    if (unansweredTheory.length > 0 || unsubmittedCoding.length > 0 || totalAnswered < interview.questionCount) {
+    if (timedOut && totalAnswered === 0) {
+      const error = new Error('No answers were submitted before the time limit, so there is nothing to evaluate.');
+      (error as any).code = 'BAD_REQUEST';
+      throw error;
+    }
+
+    if (!timedOut && (unansweredTheory.length > 0 || unsubmittedCoding.length > 0 || totalAnswered < interview.questionCount)) {
       const error = new Error(
         `Interview is not completed. ${totalAnswered} of ${interview.questionCount} questions have been answered.`
       );
@@ -359,7 +373,7 @@ export const evaluationService = {
     // Ensure interview status is marked COMPLETED if not already
     if (interview.status !== 'COMPLETED') {
       await db.transaction(async (tx) => {
-        await tx.orm.public.Interview.where({ id: interviewId }).update({ status: 'COMPLETED' });
+        await interviewLifecycle.markAllAnswered(tx, interviewId);
       });
     }
 
@@ -415,8 +429,9 @@ export const evaluationService = {
     };
 
     // If theory questions exist, evaluate them using Gemini batch evaluator
-    if (theoryQuestions.length > 0) {
-      const batchQuestions = theoryQuestions.map((q) => {
+    const answeredTheoryQuestions = theoryQuestions.filter((q) => answersByQuestionId.has(q.id));
+    if (answeredTheoryQuestions.length > 0) {
+      const batchQuestions = answeredTheoryQuestions.map((q) => {
         const ans = answersByQuestionId.get(q.id);
         return {
           questionId: q.id,
@@ -460,6 +475,23 @@ export const evaluationService = {
       }
     }
 
+    // Questions left unanswered when the time limit ended (only possible for timed-out interviews).
+    const unansweredAtDeadline = timedOut
+      ? unansweredTheory.map((q) => ({
+          questionId: q.id,
+          questionText: q.questionText,
+          orderIndex: q.orderIndex,
+          candidateAnswer: '',
+          overallScore: 0,
+          summary: 'Not answered before the interview time limit ended.',
+          strengths: [],
+          improvements: ['Plan your time so every question gets an answer before the time limit.'],
+          sampleAnswer: '',
+          questionType: effectiveQuestionType(q),
+          unanswered: true,
+        }))
+      : [];
+
     // Format objective results for coding questions (Zero Gemini calls for code execution)
     const evaluatedCodingQuestions = codingQuestions.map((q) => {
       const sub = latestSubmissionByQuestionId.get(q.id);
@@ -493,7 +525,20 @@ export const evaluationService = {
     });
 
     // Merge theory and coding questions, sorted by original orderIndex
-    const allEvaluatedQuestions = [...evaluatedTheoryQuestions, ...evaluatedCodingQuestions]
+    // Attach each question's stored origin/category/sources so the report can show where it came from.
+    const provenance = new Map<string, any>(questions.map((q: any) => [q.id, q]));
+    const withProvenance = (eq: any) => {
+      const q = provenance.get(eq.questionId);
+      const sources = safeSources(q?.sources);
+      return {
+        ...eq,
+        ...(q?.origin ? { origin: q.origin } : {}),
+        ...(q?.category ? { category: q.category } : {}),
+        ...(sources ? { sources } : {}),
+      };
+    };
+    const allEvaluatedQuestions = [...evaluatedTheoryQuestions, ...unansweredAtDeadline, ...evaluatedCodingQuestions]
+      .map(withProvenance)
       .sort((a, b) => a.orderIndex - b.orderIndex);
 
     // Calculate consolidated overall score

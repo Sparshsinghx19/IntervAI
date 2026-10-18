@@ -32,6 +32,8 @@ export interface SavedCodeSubmission {
 export interface InterviewProgress {
   interviewId: string;
   status: string;
+  /** Raw server timing (parsed by lib/interview-timer). */
+  timing?: unknown;
   answers: SavedAnswer[];
   codeSubmissions: SavedCodeSubmission[];
 }
@@ -50,6 +52,7 @@ export function parseProgress(raw: unknown): InterviewProgress | null {
   return {
     interviewId: r.interviewId,
     status: str(r.status),
+    timing: r.timing ?? null,
     answers: r.answers
       .filter(hasQuestionId)
       .map((a) => ({ questionId: str(a.questionId), answerText: str(a.answerText), submittedAt: str(a.submittedAt) })),

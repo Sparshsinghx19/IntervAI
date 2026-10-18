@@ -19,12 +19,20 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Navbar } from '@/components/marketing/navbar';
 import { API_URL, apiFetch } from '@/lib/api-client';
+import { DEFAULT_DURATION_MINUTES, DURATION_OPTIONS } from '@/lib/interview-timer';
+import {
+  buildCreatePayload,
+  InterviewMode,
+  ResumeProfile,
+  SetupQuestionType,
+  validateSetup,
+} from '@/lib/adaptive-setup';
+import { ResumeInput } from './ResumeInput';
 import { SelectorCard } from './SelectorCard';
 import {
   interviewTypes,
   difficulties,
   focusAreas,
-  questionCounts,
 } from '@/data/interview-options';
 
 const staggerContainer: Variants = {
@@ -55,29 +63,57 @@ export function InterviewSetup() {
   const [interviewType, setInterviewType] = useState<string>('');
   const [difficulty, setDifficulty] = useState<string>('');
   const [focusArea, setFocusArea] = useState<string>('');
-  const [questionCount, setQuestionCount] = useState<string>('');
+  const [duration, setDuration] = useState<string>(String(DEFAULT_DURATION_MINUTES));
+  const [mode, setMode] = useState<InterviewMode>('TOPIC');
+  const [targetRole, setTargetRole] = useState('');
+  const [resumeProfile, setResumeProfile] = useState<ResumeProfile | null>(null);
+  const [questionTypes, setQuestionTypes] = useState<SetupQuestionType[]>(['THEORY']);
 
   const [isPreparing, setIsPreparing] = useState(false);
+  // One id per setup: retries of the same request never create a second interview.
+  const [requestId] = useState<string>(() =>
+    typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `req-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+  );
   const [error, setError] = useState('');
 
-  // Calculate configuration progress
-  const completedCount = [
-    Boolean(interviewType),
-    Boolean(difficulty),
-    Boolean(focusArea),
-    Boolean(questionCount),
-  ].filter(Boolean).length;
+  const setup = {
+    mode,
+    interviewType,
+    difficulty,
+    focusArea,
+    targetRole,
+    durationMinutes: parseInt(duration, 10),
+    questionTypes,
+    resumeProfile,
+  };
+  const validationMessage = validateSetup(setup);
+  const isValid = validationMessage === null;
 
-  const isValid = completedCount === 4;
+  // Sections shown for the chosen mode, in order (used for step numbers and progress).
+  const steps: Array<{ key: string; done: boolean }> = [
+    { key: 'mode', done: true },
+    ...(mode !== 'TOPIC' ? [{ key: 'resume', done: Boolean(resumeProfile) && targetRole.trim().length >= 2 }] : []),
+    ...(mode !== 'RESUME' ? [{ key: 'type', done: Boolean(interviewType) }] : []),
+    { key: 'difficulty', done: Boolean(difficulty) },
+    ...(mode !== 'RESUME' ? [{ key: 'focus', done: Boolean(focusArea) }] : []),
+    ...(mode !== 'TOPIC' ? [{ key: 'types', done: questionTypes.length > 0 }] : []),
+    { key: 'time', done: true },
+  ];
+  const stepNo = (key: string) => String(steps.findIndex((st) => st.key === key) + 1).padStart(2, '0');
+  const completedCount = steps.filter((st) => st.done).length;
+  const totalSteps = steps.length;
+  const plannedQuestionCount = { 15: 4, 30: 6, 45: 8, 60: 10 }[parseInt(duration, 10) as 15 | 30 | 45 | 60] ?? 6;
+
+  const toggleQuestionType = (t: SetupQuestionType) =>
+    setQuestionTypes((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
 
   const selectedType = interviewTypes.find((t) => t.id === interviewType);
   const selectedDifficulty = difficulties.find((d) => d.id === difficulty);
   const selectedFocus = focusAreas.find((f) => f.id === focusArea);
-  const selectedCount = questionCounts.find((q) => q.id === questionCount);
 
   const handleStart = async () => {
     if (!isValid) {
-      setError('Please complete all 4 configuration steps before starting.');
+      setError(validationMessage ?? 'Please complete the setup before starting.');
       return;
     }
     setError('');
@@ -87,12 +123,7 @@ export function InterviewSetup() {
       const res = await apiFetch(`${API_URL}/api/interviews`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: interviewType,
-          difficulty,
-          focusArea,
-          questionCount: parseInt(questionCount, 10),
-        }),
+        body: JSON.stringify(buildCreatePayload(setup, requestId)),
       });
 
       if (!res.ok) {
@@ -128,6 +159,8 @@ export function InterviewSetup() {
       const apiErr = err as ApiError;
       if (apiErr?.status === 401) {
         setError('Your session has expired. Please log in again to start an interview.');
+      } else if ((apiErr?.status === 400 || apiErr?.status === 503) && apiErr.serverMessage) {
+        setError(apiErr.serverMessage);
       } else if (apiErr?.status) {
         const detail = apiErr.serverMessage ? ` (${apiErr.serverMessage})` : '';
         setError(
@@ -182,12 +215,63 @@ export function InterviewSetup() {
             animate="visible"
             className="lg:col-span-8 space-y-7 md:space-y-8"
           >
-            {/* 1. Interview Type */}
+            {/* Interview mode */}
             <motion.section variants={fadeUpVariant} className="space-y-3.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <span className="w-6 h-6 rounded-md bg-brand-500/20 border border-brand-500/30 text-brand-300 text-xs font-bold flex items-center justify-center">
-                    01
+                    {stepNo('mode')}
+                  </span>
+                  <h2 className="text-lg sm:text-xl font-semibold text-white tracking-tight">
+                    Interview Mode
+                  </h2>
+                </div>
+                <span className="text-xs text-slate-400 hidden sm:inline">
+                  What should the questions be based on?
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                <SelectorCard id="TOPIC" label="Topic" description="Questions on a subject you choose" selected={mode === 'TOPIC'} onClick={(v) => setMode(v as InterviewMode)} />
+                <SelectorCard id="RESUME" label="Resume" description="Questions about your own projects and skills" selected={mode === 'RESUME'} onClick={(v) => setMode(v as InterviewMode)} />
+                <SelectorCard id="MIXED" label="Mixed (recommended)" description="Your resume plus a subject, in one interview" selected={mode === 'MIXED'} onClick={(v) => setMode(v as InterviewMode)} />
+              </div>
+            </motion.section>
+
+            {/* Resume and target role */}
+            {mode !== 'TOPIC' && (
+              <motion.section variants={fadeUpVariant} initial="hidden" animate="visible" className="space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-6 h-6 rounded-md bg-brand-500/20 border border-brand-500/30 text-brand-300 text-xs font-bold flex items-center justify-center">
+                      {stepNo('resume')}
+                    </span>
+                    <h2 className="text-lg sm:text-xl font-semibold text-white tracking-tight">
+                      Your Resume &amp; Target Role
+                    </h2>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label htmlFor="target-role" className="block text-sm font-medium text-slate-200">Target role</label>
+                  <input
+                    id="target-role"
+                    value={targetRole}
+                    onChange={(e) => setTargetRole(e.target.value)}
+                    maxLength={100}
+                    placeholder="e.g. Backend Engineer"
+                    className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.03] px-3.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+                  />
+                </div>
+                <ResumeInput profile={resumeProfile} onProfile={setResumeProfile} />
+              </motion.section>
+            )}
+
+            {/* 1. Interview Type */}
+            {mode !== 'RESUME' && (
+            <motion.section variants={fadeUpVariant} className="space-y-3.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-6 h-6 rounded-md bg-brand-500/20 border border-brand-500/30 text-brand-300 text-xs font-bold flex items-center justify-center">
+                    {stepNo('type')}
                   </span>
                   <h2 className="text-lg sm:text-xl font-semibold text-white tracking-tight">
                     Interview Type
@@ -211,12 +295,14 @@ export function InterviewSetup() {
               </div>
             </motion.section>
 
+            )}
+
             {/* 2. Difficulty Level */}
             <motion.section variants={fadeUpVariant} className="space-y-3.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <span className="w-6 h-6 rounded-md bg-brand-500/20 border border-brand-500/30 text-brand-300 text-xs font-bold flex items-center justify-center">
-                    02
+                    {stepNo('difficulty')}
                   </span>
                   <h2 className="text-lg sm:text-xl font-semibold text-white tracking-tight">
                     Difficulty Level
@@ -241,11 +327,12 @@ export function InterviewSetup() {
             </motion.section>
 
             {/* 3. Focus Area */}
+            {mode !== 'RESUME' && (
             <motion.section variants={fadeUpVariant} className="space-y-3.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <span className="w-6 h-6 rounded-md bg-brand-500/20 border border-brand-500/30 text-brand-300 text-xs font-bold flex items-center justify-center">
-                    03
+                    {stepNo('focus')}
                   </span>
                   <h2 className="text-lg sm:text-xl font-semibold text-white tracking-tight">
                     Focus Area
@@ -268,30 +355,58 @@ export function InterviewSetup() {
               </div>
             </motion.section>
 
-            {/* 4. Question Count */}
+
+            )}
+
+            {/* Question types (resume and mixed interviews) */}
+            {mode !== 'TOPIC' && (
+              <motion.section variants={fadeUpVariant} initial="hidden" animate="visible" className="space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-6 h-6 rounded-md bg-brand-500/20 border border-brand-500/30 text-brand-300 text-xs font-bold flex items-center justify-center">
+                      {stepNo('types')}
+                    </span>
+                    <h2 className="text-lg sm:text-xl font-semibold text-white tracking-tight">
+                      Question Types
+                    </h2>
+                  </div>
+                  <span className="text-xs text-slate-400 hidden sm:inline">
+                    Choose one or more
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5" role="group" aria-label="Question types">
+                  <SelectorCard id="THEORY" label="Theory" description="Explain concepts and decisions" selected={questionTypes.includes('THEORY')} onClick={() => toggleQuestionType('THEORY')} />
+                  <SelectorCard id="SYSTEM_DESIGN" label="System design" description="Trade-offs and architecture" selected={questionTypes.includes('SYSTEM_DESIGN')} onClick={() => toggleQuestionType('SYSTEM_DESIGN')} />
+                  {mode === 'MIXED' && (
+                    <SelectorCard id="CODING" label="Coding" description="Solve a problem in the editor" selected={questionTypes.includes('CODING')} onClick={() => toggleQuestionType('CODING')} />
+                  )}
+                </div>
+              </motion.section>
+            )}
+
+            {/* 5. Time Limit */}
             <motion.section variants={fadeUpVariant} className="space-y-3.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <span className="w-6 h-6 rounded-md bg-brand-500/20 border border-brand-500/30 text-brand-300 text-xs font-bold flex items-center justify-center">
-                    04
+                    {stepNo('time')}
                   </span>
                   <h2 className="text-lg sm:text-xl font-semibold text-white tracking-tight">
-                    Question Count
+                    Time Limit
                   </h2>
                 </div>
                 <span className="text-xs text-slate-400 hidden sm:inline">
-                  Estimated session length
+                  Starts when you open the interview
                 </span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                {questionCounts.map((opt) => (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {DURATION_OPTIONS.map((minutes) => (
                   <SelectorCard
-                    key={opt.id}
-                    id={opt.id}
-                    label={opt.label}
-                    description={opt.description}
-                    selected={questionCount === opt.id}
-                    onClick={setQuestionCount}
+                    key={minutes}
+                    id={String(minutes)}
+                    label={`${minutes} minutes`}
+                    selected={duration === String(minutes)}
+                    onClick={setDuration}
                   />
                 ))}
               </div>
@@ -345,7 +460,7 @@ export function InterviewSetup() {
                       isValid ? 'bg-cyan-400 shadow-[0_0_8px_#22d3ee]' : 'bg-slate-500'
                     }`}
                   />
-                  {isValid ? 'Ready to initiate' : `${completedCount}/4 configured`}
+                  {isValid ? 'Ready to initiate' : `${completedCount}/${totalSteps} configured`}
                 </span>
               </div>
             </Card>
@@ -357,7 +472,7 @@ export function InterviewSetup() {
                   Session Summary
                 </h3>
                 <span className="text-xs font-mono text-brand-300 bg-brand-500/10 px-2 py-0.5 rounded-full border border-brand-500/20">
-                  {completedCount}/4 selected
+                  {completedCount}/{totalSteps} selected
                 </span>
               </div>
 
@@ -366,14 +481,38 @@ export function InterviewSetup() {
                 <motion.div
                   className="h-full bg-gradient-to-r from-brand-500 to-cyan-400 rounded-full"
                   initial={{ width: 0 }}
-                  animate={{ width: `${(completedCount / 4) * 100}%` }}
+                  animate={{ width: `${(completedCount / totalSteps) * 100}%` }}
                   transition={{ duration: 0.3 }}
                 />
               </div>
 
               {/* Scannable Breakdown List */}
               <ul className="space-y-3.5 mb-6 text-xs sm:text-sm">
+                {/* Mode */}
+                <li className="flex items-center justify-between gap-2 pb-2.5 border-b border-white/5">
+                  <span className="flex items-center gap-2 text-slate-400">
+                    <Sparkles className="w-4 h-4 text-cyan-300 shrink-0" />
+                    <span>Mode</span>
+                  </span>
+                  <span className="font-medium text-right text-white">
+                    {mode === 'TOPIC' ? 'Topic' : mode === 'RESUME' ? 'Resume' : 'Mixed'}
+                  </span>
+                </li>
+
+                {mode !== 'TOPIC' && (
+                  <li className="flex items-center justify-between gap-2 pb-2.5 border-b border-white/5">
+                    <span className="flex items-center gap-2 text-slate-400">
+                      <Target className="w-4 h-4 text-brand-300 shrink-0" />
+                      <span>Role</span>
+                    </span>
+                    <span className={`font-medium text-right truncate max-w-[170px] ${targetRole.trim() ? 'text-white' : 'text-slate-500 italic'}`}>
+                      {targetRole.trim() || 'Not entered'}
+                    </span>
+                  </li>
+                )}
+
                 {/* Type */}
+                {mode !== 'RESUME' && (
                 <li className="flex items-center justify-between gap-2 pb-2.5 border-b border-white/5">
                   <span className="flex items-center gap-2 text-slate-400">
                     <Layers className="w-4 h-4 text-brand-400 shrink-0" />
@@ -387,6 +526,8 @@ export function InterviewSetup() {
                     {selectedType?.label || 'Not selected'}
                   </span>
                 </li>
+
+                )}
 
                 {/* Difficulty */}
                 <li className="flex items-center justify-between gap-2 pb-2.5 border-b border-white/5">
@@ -404,6 +545,7 @@ export function InterviewSetup() {
                 </li>
 
                 {/* Focus */}
+                {mode !== 'RESUME' && (
                 <li className="flex items-center justify-between gap-2 pb-2.5 border-b border-white/5">
                   <span className="flex items-center gap-2 text-slate-400">
                     <Target className="w-4 h-4 text-amber-400 shrink-0" />
@@ -418,18 +560,25 @@ export function InterviewSetup() {
                   </span>
                 </li>
 
+                )}
+
+                {/* Time limit */}
+                <li className="flex items-center justify-between gap-2 pb-2.5 border-b border-white/5">
+                  <span className="flex items-center gap-2 text-slate-400">
+                    <Clock className="w-4 h-4 text-rose-300 shrink-0" />
+                    <span>Time Limit</span>
+                  </span>
+                  <span className="font-medium text-right text-white">{duration} minutes</span>
+                </li>
+
                 {/* Questions */}
                 <li className="flex items-center justify-between gap-2">
                   <span className="flex items-center gap-2 text-slate-400">
                     <Clock className="w-4 h-4 text-emerald-400 shrink-0" />
                     <span>Questions</span>
                   </span>
-                  <span
-                    className={`font-medium text-right truncate ${
-                      selectedCount ? 'text-white' : 'text-slate-500 italic'
-                    }`}
-                  >
-                    {selectedCount?.label || 'Not selected'}
+                  <span className="font-medium text-right text-white">
+                    {mode === 'TOPIC' ? `${plannedQuestionCount} questions` : `About ${plannedQuestionCount} questions`}
                   </span>
                 </li>
               </ul>

@@ -1,0 +1,716 @@
+[
+  {
+    "id": "column.public.interview.completedAt",
+    "label": "Add column \"completedAt\" to \"interview\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "completedAt",
+        "table": "interview"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"completedAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "interview",
+          "completedAt"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"completedAt\"",
+        "sql": "ALTER TABLE \"public\".\"interview\" ADD COLUMN \"completedAt\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"completedAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "interview",
+          "completedAt"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.interview.completionReason",
+    "label": "Add column \"completionReason\" to \"interview\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "completionReason",
+        "table": "interview"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"completionReason\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "interview",
+          "completionReason"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"completionReason\"",
+        "sql": "ALTER TABLE \"public\".\"interview\" ADD COLUMN \"completionReason\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"completionReason\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "interview",
+          "completionReason"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.interview.deadlineAt",
+    "label": "Add column \"deadlineAt\" to \"interview\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "deadlineAt",
+        "table": "interview"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"deadlineAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "interview",
+          "deadlineAt"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"deadlineAt\"",
+        "sql": "ALTER TABLE \"public\".\"interview\" ADD COLUMN \"deadlineAt\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"deadlineAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "interview",
+          "deadlineAt"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.interview.durationMinutes",
+    "label": "Add column \"durationMinutes\" to \"interview\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "durationMinutes",
+        "table": "interview"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"durationMinutes\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "interview",
+          "durationMinutes"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"durationMinutes\"",
+        "sql": "ALTER TABLE \"public\".\"interview\" ADD COLUMN \"durationMinutes\" int4"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"durationMinutes\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "interview",
+          "durationMinutes"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.interview.followUpCount",
+    "label": "Add column \"followUpCount\" to \"interview\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "followUpCount",
+        "table": "interview"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"followUpCount\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "interview",
+          "followUpCount"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"followUpCount\"",
+        "sql": "ALTER TABLE \"public\".\"interview\" ADD COLUMN \"followUpCount\" int4 DEFAULT 0 NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"followUpCount\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "interview",
+          "followUpCount"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.interview.mode",
+    "label": "Add column \"mode\" to \"interview\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "mode",
+        "table": "interview"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"mode\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "interview",
+          "mode"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"mode\"",
+        "sql": "ALTER TABLE \"public\".\"interview\" ADD COLUMN \"mode\" text DEFAULT 'TOPIC' NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"mode\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "interview",
+          "mode"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.interview.planContext",
+    "label": "Add column \"planContext\" to \"interview\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "planContext",
+        "table": "interview"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"planContext\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "interview",
+          "planContext"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"planContext\"",
+        "sql": "ALTER TABLE \"public\".\"interview\" ADD COLUMN \"planContext\" json"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"planContext\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "interview",
+          "planContext"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.interview.startedAt",
+    "label": "Add column \"startedAt\" to \"interview\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "startedAt",
+        "table": "interview"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"startedAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "interview",
+          "startedAt"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"startedAt\"",
+        "sql": "ALTER TABLE \"public\".\"interview\" ADD COLUMN \"startedAt\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"startedAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "interview",
+          "startedAt"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.interview.targetRole",
+    "label": "Add column \"targetRole\" to \"interview\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "targetRole",
+        "table": "interview"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"targetRole\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "interview",
+          "targetRole"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"targetRole\"",
+        "sql": "ALTER TABLE \"public\".\"interview\" ADD COLUMN \"targetRole\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"targetRole\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "interview",
+          "targetRole"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.question.category",
+    "label": "Add column \"category\" to \"question\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "category",
+        "table": "question"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"category\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "question",
+          "category"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"category\"",
+        "sql": "ALTER TABLE \"public\".\"question\" ADD COLUMN \"category\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"category\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "question",
+          "category"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.question.followUpOfId",
+    "label": "Add column \"followUpOfId\" to \"question\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "followUpOfId",
+        "table": "question"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"followUpOfId\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "question",
+          "followUpOfId"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"followUpOfId\"",
+        "sql": "ALTER TABLE \"public\".\"question\" ADD COLUMN \"followUpOfId\" uuid"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"followUpOfId\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "question",
+          "followUpOfId"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.question.origin",
+    "label": "Add column \"origin\" to \"question\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "origin",
+        "table": "question"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"origin\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "question",
+          "origin"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"origin\"",
+        "sql": "ALTER TABLE \"public\".\"question\" ADD COLUMN \"origin\" text DEFAULT 'CURATED' NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"origin\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "question",
+          "origin"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.question.sources",
+    "label": "Add column \"sources\" to \"question\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "sources",
+        "table": "question"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"sources\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "question",
+          "sources"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"sources\"",
+        "sql": "ALTER TABLE \"public\".\"question\" ADD COLUMN \"sources\" json"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"sources\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "question",
+          "sources"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.interview.interview_completionReason_check_e5987b82",
+    "label": "Add check constraint \"interview_completionReason_check_e5987b82\" on \"interview\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "interview_completionReason_check_e5987b82",
+        "table": "interview"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"interview_completionReason_check_e5987b82\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "interview_completionReason_check_e5987b82",
+          "public",
+          "\"public\".\"interview\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"interview_completionReason_check_e5987b82\"",
+        "sql": "ALTER TABLE \"public\".\"interview\" ADD CONSTRAINT \"interview_completionReason_check_e5987b82\" CHECK (\"completionReason\" IN ('ALL_ANSWERED', 'TIME_EXPIRED'))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"interview_completionReason_check_e5987b82\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "interview_completionReason_check_e5987b82",
+          "public",
+          "\"public\".\"interview\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.interview.interview_mode_check_d077e14f",
+    "label": "Add check constraint \"interview_mode_check_d077e14f\" on \"interview\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "interview_mode_check_d077e14f",
+        "table": "interview"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"interview_mode_check_d077e14f\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "interview_mode_check_d077e14f",
+          "public",
+          "\"public\".\"interview\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"interview_mode_check_d077e14f\"",
+        "sql": "ALTER TABLE \"public\".\"interview\" ADD CONSTRAINT \"interview_mode_check_d077e14f\" CHECK (\"mode\" IN ('TOPIC', 'RESUME', 'MIXED'))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"interview_mode_check_d077e14f\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "interview_mode_check_d077e14f",
+          "public",
+          "\"public\".\"interview\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.question.question_origin_check_43fd7afc",
+    "label": "Add check constraint \"question_origin_check_43fd7afc\" on \"question\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "question_origin_check_43fd7afc",
+        "table": "question"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"question_origin_check_43fd7afc\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "question_origin_check_43fd7afc",
+          "public",
+          "\"public\".\"question\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"question_origin_check_43fd7afc\"",
+        "sql": "ALTER TABLE \"public\".\"question\" ADD CONSTRAINT \"question_origin_check_43fd7afc\" CHECK (\"origin\" IN ('CURATED', 'SUBJECT', 'RESUME', 'FOLLOW_UP'))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"question_origin_check_43fd7afc\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "question_origin_check_43fd7afc",
+          "public",
+          "\"public\".\"question\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.question.question_followUpOfId_key",
+    "label": "Add unique constraint on \"question\" (followUpOfId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "question_followUpOfId_key",
+        "table": "question"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"question_followUpOfId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "question_followUpOfId_key",
+          "public",
+          "\"public\".\"question\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"question_followUpOfId_key\"",
+        "sql": "ALTER TABLE \"public\".\"question\" ADD CONSTRAINT \"question_followUpOfId_key\" UNIQUE (\"followUpOfId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"question_followUpOfId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "question_followUpOfId_key",
+          "public",
+          "\"public\".\"question\""
+        ]
+      }
+    ]
+  }
+]

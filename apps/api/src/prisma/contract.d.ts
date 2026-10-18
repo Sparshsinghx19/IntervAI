@@ -34,7 +34,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'4fe7e0fbba4a7785773fa913f7bc760390bc5b62c71e02910ecc2a00d86a81a7'>;
+  StorageHashBase<'939e37ca60b3e9fd06d7de3c45ab2513cf4edb0de0e4b1cb10bf0e4eb57a3802'>;
 export type ExecutionHash =
   ExecutionHashBase<'19c7cf23070ab4a0a6b27c64500360ef862b1d7da53cf8d2bfc5c4d9be0e72ac'>;
 export type ProfileHash =
@@ -317,6 +317,15 @@ export type FieldOutputTypes = {
       readonly focusArea: CodecTypes['pg/text@1']['output'];
       readonly questionCount: CodecTypes['pg/int4@1']['output'];
       readonly status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
+      readonly mode: 'TOPIC' | 'RESUME' | 'MIXED';
+      readonly targetRole: CodecTypes['pg/text@1']['output'] | null;
+      readonly durationMinutes: CodecTypes['pg/int4@1']['output'] | null;
+      readonly startedAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
+      readonly deadlineAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
+      readonly completedAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
+      readonly completionReason: 'ALL_ANSWERED' | 'TIME_EXPIRED' | null;
+      readonly followUpCount: CodecTypes['pg/int4@1']['output'];
+      readonly planContext: CodecTypes['pg/json@1']['output'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     };
@@ -327,6 +336,10 @@ export type FieldOutputTypes = {
       readonly orderIndex: CodecTypes['pg/int4@1']['output'];
       readonly type: 'THEORY' | 'CODING' | 'SYSTEM_DESIGN';
       readonly codingProblemSlug: CodecTypes['pg/text@1']['output'] | null;
+      readonly origin: 'CURATED' | 'SUBJECT' | 'RESUME' | 'FOLLOW_UP';
+      readonly category: CodecTypes['pg/text@1']['output'] | null;
+      readonly sources: CodecTypes['pg/json@1']['output'] | null;
+      readonly followUpOfId: CodecTypes['pg/uuid@1']['output'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     };
@@ -418,6 +431,15 @@ export type FieldInputTypes = {
       readonly focusArea: CodecTypes['pg/text@1']['input'];
       readonly questionCount: CodecTypes['pg/int4@1']['input'];
       readonly status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
+      readonly mode: 'TOPIC' | 'RESUME' | 'MIXED';
+      readonly targetRole: CodecTypes['pg/text@1']['input'] | null;
+      readonly durationMinutes: CodecTypes['pg/int4@1']['input'] | null;
+      readonly startedAt: CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
+      readonly deadlineAt: CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
+      readonly completedAt: CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
+      readonly completionReason: 'ALL_ANSWERED' | 'TIME_EXPIRED' | null;
+      readonly followUpCount: CodecTypes['pg/int4@1']['input'];
+      readonly planContext: CodecTypes['pg/json@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
     };
@@ -428,6 +450,10 @@ export type FieldInputTypes = {
       readonly orderIndex: CodecTypes['pg/int4@1']['input'];
       readonly type: 'THEORY' | 'CODING' | 'SYSTEM_DESIGN';
       readonly codingProblemSlug: CodecTypes['pg/text@1']['input'] | null;
+      readonly origin: 'CURATED' | 'SUBJECT' | 'RESUME' | 'FOLLOW_UP';
+      readonly category: CodecTypes['pg/text@1']['input'] | null;
+      readonly sources: CodecTypes['pg/json@1']['input'] | null;
+      readonly followUpOfId: CodecTypes['pg/uuid@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
     };
@@ -512,23 +538,36 @@ export type StorageColumnTypes = {
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     };
     readonly interview: {
+      readonly completedAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
+      readonly completionReason: 'ALL_ANSWERED' | 'TIME_EXPIRED' | null;
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly deadlineAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
       readonly difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+      readonly durationMinutes: CodecTypes['pg/int4@1']['output'] | null;
       readonly focusArea: CodecTypes['pg/text@1']['output'];
+      readonly followUpCount: CodecTypes['pg/int4@1']['output'];
       readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly mode: 'TOPIC' | 'RESUME' | 'MIXED';
       readonly ownerId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly planContext: CodecTypes['pg/json@1']['output'] | null;
       readonly questionCount: CodecTypes['pg/int4@1']['output'];
+      readonly startedAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
       readonly status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
+      readonly targetRole: CodecTypes['pg/text@1']['output'] | null;
       readonly type: 'TECHNICAL' | 'BEHAVIORAL' | 'HR';
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     };
     readonly question: {
+      readonly category: CodecTypes['pg/text@1']['output'] | null;
       readonly codingProblemSlug: CodecTypes['pg/text@1']['output'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly followUpOfId: CodecTypes['pg/uuid@1']['output'] | null;
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly interviewId: CodecTypes['pg/uuid@1']['output'];
       readonly orderIndex: CodecTypes['pg/int4@1']['output'];
+      readonly origin: 'CURATED' | 'SUBJECT' | 'RESUME' | 'FOLLOW_UP';
       readonly questionText: CodecTypes['pg/text@1']['output'];
+      readonly sources: CodecTypes['pg/json@1']['output'] | null;
       readonly type: 'THEORY' | 'CODING' | 'SYSTEM_DESIGN';
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     };
@@ -613,23 +652,36 @@ export type StorageColumnInputTypes = {
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
     };
     readonly interview: {
+      readonly completedAt: CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
+      readonly completionReason: 'ALL_ANSWERED' | 'TIME_EXPIRED' | null;
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly deadlineAt: CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
       readonly difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+      readonly durationMinutes: CodecTypes['pg/int4@1']['input'] | null;
       readonly focusArea: CodecTypes['pg/text@1']['input'];
+      readonly followUpCount: CodecTypes['pg/int4@1']['input'];
       readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly mode: 'TOPIC' | 'RESUME' | 'MIXED';
       readonly ownerId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly planContext: CodecTypes['pg/json@1']['input'] | null;
       readonly questionCount: CodecTypes['pg/int4@1']['input'];
+      readonly startedAt: CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
       readonly status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
+      readonly targetRole: CodecTypes['pg/text@1']['input'] | null;
       readonly type: 'TECHNICAL' | 'BEHAVIORAL' | 'HR';
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
     };
     readonly question: {
+      readonly category: CodecTypes['pg/text@1']['input'] | null;
       readonly codingProblemSlug: CodecTypes['pg/text@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly followUpOfId: CodecTypes['pg/uuid@1']['input'] | null;
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly interviewId: CodecTypes['pg/uuid@1']['input'];
       readonly orderIndex: CodecTypes['pg/int4@1']['input'];
+      readonly origin: 'CURATED' | 'SUBJECT' | 'RESUME' | 'FOLLOW_UP';
       readonly questionText: CodecTypes['pg/text@1']['input'];
+      readonly sources: CodecTypes['pg/json@1']['input'] | null;
       readonly type: 'THEORY' | 'CODING' | 'SYSTEM_DESIGN';
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
     };
@@ -677,6 +729,15 @@ export namespace Models {
     focusArea: CodecTypes['pg/text@1']['output'];
     questionCount: CodecTypes['pg/int4@1']['output'];
     status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
+    mode: 'TOPIC' | 'RESUME' | 'MIXED';
+    targetRole: CodecTypes['pg/text@1']['output'] | null;
+    durationMinutes: CodecTypes['pg/int4@1']['output'] | null;
+    startedAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
+    deadlineAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
+    completedAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
+    completionReason: 'ALL_ANSWERED' | 'TIME_EXPIRED' | null;
+    followUpCount: CodecTypes['pg/int4@1']['output'];
+    planContext: CodecTypes['pg/json@1']['output'] | null;
     createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     codeSubmissions: public_CodeSubmission[];
@@ -692,6 +753,10 @@ export namespace Models {
     orderIndex: CodecTypes['pg/int4@1']['output'];
     type: 'THEORY' | 'CODING' | 'SYSTEM_DESIGN';
     codingProblemSlug: CodecTypes['pg/text@1']['output'] | null;
+    origin: 'CURATED' | 'SUBJECT' | 'RESUME' | 'FOLLOW_UP';
+    category: CodecTypes['pg/text@1']['output'] | null;
+    sources: CodecTypes['pg/json@1']['output'] | null;
+    followUpOfId: CodecTypes['pg/uuid@1']['output'] | null;
     createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     answer: public_Answer | null;
@@ -1282,6 +1347,59 @@ type ContractBase = Omit<
                     readonly value: DefaultLiteralValue<'pg/text@1', 'NOT_STARTED'>;
                   };
                 };
+                readonly mode: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'TOPIC'>;
+                  };
+                };
+                readonly targetRole: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly durationMinutes: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                };
+                readonly startedAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: true;
+                };
+                readonly deadlineAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: true;
+                };
+                readonly completedAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: true;
+                };
+                readonly completionReason: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly followUpCount: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/int4@1', 0>;
+                  };
+                };
+                readonly planContext: {
+                  readonly nativeType: 'json';
+                  readonly codecId: 'pg/json@1';
+                  readonly nullable: true;
+                };
                 readonly createdAt: {
                   readonly nativeType: 'timestamptz';
                   readonly codecId: 'pg/timestamptz-temporal@1';
@@ -1355,6 +1473,30 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/text@1';
                   readonly nullable: true;
                 };
+                readonly origin: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'CURATED'>;
+                  };
+                };
+                readonly category: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly sources: {
+                  readonly nativeType: 'json';
+                  readonly codecId: 'pg/json@1';
+                  readonly nullable: true;
+                };
+                readonly followUpOfId: {
+                  readonly nativeType: 'uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                };
                 readonly createdAt: {
                   readonly nativeType: 'timestamptz';
                   readonly codecId: 'pg/timestamptz-temporal@1';
@@ -1368,7 +1510,7 @@ type ContractBase = Omit<
                 };
               };
               primaryKey: { readonly columns: readonly ['id'] };
-              uniques: readonly [];
+              uniques: readonly [{ readonly columns: readonly ['followUpOfId'] }];
               indexes: readonly [
                 {
                   readonly name: 'question_interviewId_idx_766b64f2';
@@ -1442,6 +1584,10 @@ type ContractBase = Omit<
             };
           };
           readonly valueSet: {
+            readonly CompletionReason: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['ALL_ANSWERED', 'TIME_EXPIRED'];
+            };
             readonly EvaluationStatus: {
               readonly kind: 'valueSet';
               readonly values: readonly ['PENDING', 'COMPLETED', 'FAILED'];
@@ -1450,6 +1596,10 @@ type ContractBase = Omit<
               readonly kind: 'valueSet';
               readonly values: readonly ['EASY', 'MEDIUM', 'HARD'];
             };
+            readonly InterviewMode: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['TOPIC', 'RESUME', 'MIXED'];
+            };
             readonly InterviewStatus: {
               readonly kind: 'valueSet';
               readonly values: readonly ['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED'];
@@ -1457,6 +1607,10 @@ type ContractBase = Omit<
             readonly InterviewType: {
               readonly kind: 'valueSet';
               readonly values: readonly ['TECHNICAL', 'BEHAVIORAL', 'HR'];
+            };
+            readonly QuestionOrigin: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['CURATED', 'SUBJECT', 'RESUME', 'FOLLOW_UP'];
             };
             readonly QuestionType: {
               readonly kind: 'valueSet';
@@ -1996,6 +2150,51 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly mode: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly targetRole: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly durationMinutes: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly startedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+              readonly deadlineAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+              readonly completedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
+              readonly completionReason: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly followUpCount: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly planContext: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/json@1' };
+              };
               readonly createdAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -2067,6 +2266,15 @@ type ContractBase = Omit<
                 readonly focusArea: { readonly column: 'focusArea' };
                 readonly questionCount: { readonly column: 'questionCount' };
                 readonly status: { readonly column: 'status' };
+                readonly mode: { readonly column: 'mode' };
+                readonly targetRole: { readonly column: 'targetRole' };
+                readonly durationMinutes: { readonly column: 'durationMinutes' };
+                readonly startedAt: { readonly column: 'startedAt' };
+                readonly deadlineAt: { readonly column: 'deadlineAt' };
+                readonly completedAt: { readonly column: 'completedAt' };
+                readonly completionReason: { readonly column: 'completionReason' };
+                readonly followUpCount: { readonly column: 'followUpCount' };
+                readonly planContext: { readonly column: 'planContext' };
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
               };
@@ -2097,6 +2305,22 @@ type ContractBase = Omit<
               readonly codingProblemSlug: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly origin: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly category: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly sources: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/json@1' };
+              };
+              readonly followUpOfId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
               readonly createdAt: {
                 readonly nullable: false;
@@ -2160,6 +2384,10 @@ type ContractBase = Omit<
                 readonly orderIndex: { readonly column: 'orderIndex' };
                 readonly type: { readonly column: 'type' };
                 readonly codingProblemSlug: { readonly column: 'codingProblemSlug' };
+                readonly origin: { readonly column: 'origin' };
+                readonly category: { readonly column: 'category' };
+                readonly sources: { readonly column: 'sources' };
+                readonly followUpOfId: { readonly column: 'followUpOfId' };
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
               };
@@ -2273,12 +2501,36 @@ type ContractBase = Omit<
               { readonly name: 'COMPLETED'; readonly value: 'COMPLETED' },
             ];
           };
+          readonly InterviewMode: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'TOPIC'; readonly value: 'TOPIC' },
+              { readonly name: 'RESUME'; readonly value: 'RESUME' },
+              { readonly name: 'MIXED'; readonly value: 'MIXED' },
+            ];
+          };
+          readonly CompletionReason: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'ALL_ANSWERED'; readonly value: 'ALL_ANSWERED' },
+              { readonly name: 'TIME_EXPIRED'; readonly value: 'TIME_EXPIRED' },
+            ];
+          };
           readonly QuestionType: {
             readonly codecId: 'pg/text@1';
             readonly members: readonly [
               { readonly name: 'THEORY'; readonly value: 'THEORY' },
               { readonly name: 'CODING'; readonly value: 'CODING' },
               { readonly name: 'SYSTEM_DESIGN'; readonly value: 'SYSTEM_DESIGN' },
+            ];
+          };
+          readonly QuestionOrigin: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'CURATED'; readonly value: 'CURATED' },
+              { readonly name: 'SUBJECT'; readonly value: 'SUBJECT' },
+              { readonly name: 'RESUME'; readonly value: 'RESUME' },
+              { readonly name: 'FOLLOW_UP'; readonly value: 'FOLLOW_UP' },
             ];
           };
           readonly EvaluationStatus: {

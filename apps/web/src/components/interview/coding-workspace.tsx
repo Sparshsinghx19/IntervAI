@@ -138,7 +138,7 @@ interface CodingWorkspaceProps {
     questionText?: string;
     difficulty?: string;
     focusArea?: string;
-    codingProblemSlug?: string;
+    codingProblemSlug?: string | null;
     examples?: Array<{
       input: string;
       output: string;
@@ -738,13 +738,14 @@ export function CodingWorkspace({
         ) : null}
 
         {/* Guidance when problem is not mapped */}
-        {!problemData && (
-          <div className="bg-amber-950/20 border border-amber-500/20 rounded-lg p-3 text-xs text-amber-300 space-y-1.5">
+        {!problemData && !isProblemLoading && (
+          <div role="status" className="bg-amber-950/20 border border-amber-500/20 rounded-lg p-3 text-xs text-amber-300 space-y-1.5">
             <div className="flex items-center gap-1.5 font-semibold">
               <AlertTriangle className="w-3.5 h-3.5 text-amber-400" /> Runnable Problem Definition Unavailable
             </div>
             <p className="leading-relaxed text-slate-300">
-              {problemError || 'This coding question does not have an executable problem definition configured. Code execution and submission are disabled. If this question is theoretical, you can switch to Text Mode.'}
+              {problemError || 'This coding question does not have an executable problem definition configured.'}{' '}
+              Code execution and submission are disabled. Reload the page to try again; your saved progress is kept.
             </p>
           </div>
         )}

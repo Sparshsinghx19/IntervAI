@@ -30,6 +30,13 @@ export type EvaluationStage =
 export interface QuestionEvaluationResult {
   questionId: string;
   questionText: string;
+  /** Where the question came from (curated, subject research, resume, follow-up). */
+  origin?: string;
+  category?: string;
+  /** Web sources that informed the question, when research supported it. */
+  sources?: Array<{ id: string; title: string; url: string; domain: string; retrievedAt?: string }>;
+  /** True when the time limit ended before this question was answered. */
+  unanswered?: boolean;
   orderIndex: number;
   candidateAnswer: string;
   correctnessScore?: number;
