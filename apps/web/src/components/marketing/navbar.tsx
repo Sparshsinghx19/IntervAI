@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronLeft, FileText, LogOut } from "lucide-react";
+import { ChevronLeft, LayoutDashboard, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/auth/AuthProvider";
 
@@ -61,7 +61,7 @@ function MarketingNav() {
         <div className="flex items-center gap-1 sm:gap-2">
           {isAuthenticated ? (
             <>
-              <MyReportsLink className="hidden sm:inline-flex" />
+              <DashboardLink />
               <LogoutButton className="hidden sm:inline-flex" />
             </>
           ) : (
@@ -84,13 +84,13 @@ function MarketingNav() {
   );
 }
 
-/** Link to the signed-in user's saved interview reports. */
-function MyReportsLink({ className }: { className?: string }) {
+/** Link to the signed-in user's dashboard (scores and recent reports). */
+function DashboardLink({ className }: { className?: string }) {
   const pathname = usePathname();
-  const active = pathname === "/reports";
+  const active = pathname === "/dashboard";
   return (
     <Link
-      href="/reports"
+      href="/dashboard"
       aria-current={active ? "page" : undefined}
       className={cn(
         "inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-sm font-medium transition-colors hover:bg-white/[0.04] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 sm:px-3.5",
@@ -98,8 +98,8 @@ function MyReportsLink({ className }: { className?: string }) {
         className,
       )}
     >
-      <FileText className="h-4 w-4 shrink-0" aria-hidden="true" />
-      <span className="sr-only sm:not-sr-only">My Reports</span>
+      <LayoutDashboard className="h-4 w-4 shrink-0" aria-hidden="true" />
+      <span className="sr-only sm:not-sr-only">Dashboard</span>
     </Link>
   );
 }
@@ -170,7 +170,7 @@ function AccountSummary() {
       <span className="hidden max-w-[160px] truncate text-sm text-slate-400 md:inline" title={user.email}>
         {user.name}
       </span>
-      <MyReportsLink />
+      <DashboardLink />
       <LogoutButton />
     </div>
   );

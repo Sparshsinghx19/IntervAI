@@ -1,4 +1,5 @@
-export const DEFAULT_AFTER_LOGIN = '/interview';
+/** Where login/sign-up lands when no safe return path was supplied. */
+export const DEFAULT_AFTER_LOGIN = '/dashboard';
 
 const AUTH_PAGES = new Set(['/login', '/signup']);
 const PLACEHOLDER_ORIGIN = 'http://intervai.local';

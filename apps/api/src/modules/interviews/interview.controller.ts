@@ -31,6 +31,23 @@ export const interviewController = {
    * GET /api/interviews/history: the signed-in user's completed interviews with saved reports.
    * The user always comes from the session; there is no user parameter.
    */
+  /**
+   * GET /api/interviews/summary: dashboard metrics for the signed-in user only.
+   */
+  getDashboardSummary: async (req: Request, res: Response) => {
+    const ownerId = req.principal?.userId;
+    if (!ownerId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    try {
+      const summary = await interviewHistoryService.getDashboardSummary(ownerId);
+      return res.status(200).json(summary);
+    } catch (error: any) {
+      console.error('Failed to load dashboard summary:', error?.name || 'Error');
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  },
+
   getInterviewHistory: async (req: Request, res: Response) => {
     const ownerId = req.principal?.userId;
     if (!ownerId) {

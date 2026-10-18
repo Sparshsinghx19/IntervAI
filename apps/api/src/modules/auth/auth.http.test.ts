@@ -420,7 +420,7 @@ describe('Interview authorization', () => {
     assert.ok(stack.slice(0, firstRoute).some((layer) => layer.handle === requireAuth), 'requireAuth runs before all routes');
 
     // User-scoped routes that address no interview id; they read the user from the session.
-    const userScoped = new Set(['/', '/history']);
+    const userScoped = new Set(['/', '/history', '/summary']);
     for (const layer of stack.filter((l) => l.route)) {
       const path: string = layer.route.path;
       if (userScoped.has(path)) {

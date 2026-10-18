@@ -203,19 +203,21 @@ describe('Safe redirects', () => {
     assert.equal(getSafeRedirect('/interview'), '/interview');
   });
 
-  it('rejects anything that could leave the site or loop to an auth page', () => {
+  it('falls back to the dashboard for anything that could leave the site or loop to an auth page', () => {
     for (const bad of [
       'https://evil.com', '//evil.com', '/\\evil.com', '\\\\evil.com', 'javascript:alert(1)',
       'evil.com', '/%0d%0aLocation:x', '/login', '/signup?next=/x', '', null, undefined, '/a\nb',
     ]) {
-      assert.equal(getSafeRedirect(bad as string), '/interview', String(bad));
+      assert.equal(getSafeRedirect(bad as string), '/dashboard', String(bad));
     }
   });
 
   it('builds auth links that preserve a safe return path', () => {
     assert.equal(buildAuthHref('/login', '/interview/session?id=1'), '/login?next=%2Finterview%2Fsession%3Fid%3D1');
     assert.equal(buildAuthHref('/signup', 'https://evil.com'), '/signup');
-    assert.equal(buildAuthHref('/login', '/interview'), '/login');
+    // The default destination needs no parameter; any other safe path is preserved.
+    assert.equal(buildAuthHref('/login', '/dashboard'), '/login');
+    assert.equal(buildAuthHref('/login', '/interview'), '/login?next=%2Finterview');
   });
 });
 

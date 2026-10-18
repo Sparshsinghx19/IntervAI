@@ -37,8 +37,9 @@ interface FakeReportRow {
 }
 
 /**
- * Evaluates the service's real where/orderBy/limit lambdas against plain rows,
- * so the filtering, ordering and limit logic is exercised without a database.
+ * Evaluates the service's real where/orderBy/limit/aggregate lambdas against
+ * plain rows, so filtering, ordering, limits and aggregation are exercised
+ * without a database (aggregates follow SQL: avg/max skip NULLs).
  */
 const installFakeReportTable = (rows: FakeReportRow[]) => {
   const rowProxy = (row: Record<string, any>): any =>
@@ -46,7 +47,10 @@ const installFakeReportTable = (rows: FakeReportRow[]) => {
       get: (_target, key: string) =>
         key === 'interview'
           ? { some: (fn: (i: any) => boolean) => Boolean(row.interview) && fn(rowProxy(row.interview)) }
-          : { eq: (value: unknown) => row[key] === value },
+          : {
+              eq: (value: unknown) => row[key] === value,
+              isNotNull: () => row[key] !== null && row[key] !== undefined,
+            },
     });
   const orderProxy: any = new Proxy({}, {
     get: (_target, key: string) => ({ desc: () => ({ key, dir: -1 }), asc: () => ({ key, dir: 1 }) }),
@@ -77,6 +81,24 @@ const installFakeReportTable = (rows: FakeReportRow[]) => {
           return 0;
         });
         return matched.slice(0, query.limit);
+      },
+      first: async () => (await chain.limit(1).all())[0] ?? null,
+      aggregate: async (fn: (a: any) => Record<string, () => unknown>) => {
+        const matched = rows.filter((row) => wheres.every((w) => w(rowProxy(row))));
+        const values = (field: string) =>
+          matched.map((r: any) => r[field]).filter((v: any) => v !== null && v !== undefined) as any[];
+        const spec = fn({
+          count: () => () => matched.length,
+          avg: (f: string) => () => {
+            const v = values(f);
+            return v.length ? v.reduce((x: number, y: number) => x + y, 0) / v.length : null;
+          },
+          max: (f: string) => () => {
+            const v = values(f);
+            return v.length ? v.reduce((x: any, y: any) => (y > x ? y : x)) : null;
+          },
+        });
+        return Object.fromEntries(Object.entries(spec).map(([k, compute]) => [k, compute()]));
       },
     };
     return chain;
@@ -161,6 +183,86 @@ describe('interviewHistoryService.listCompletedReports', () => {
   it('returns an empty list when the user has no completed reports', async () => {
     installFakeReportTable([report(BOB, '2026-10-10T10:00:00Z'), report(ALICE, '2026-10-11T10:00:00Z', { status: 'FAILED' })]);
     assert.deepStrictEqual(await interviewHistoryService.listCompletedReports(ALICE), []);
+  });
+});
+
+describe('interviewHistoryService.getDashboardSummary', () => {
+  beforeEach(() => mock.restoreAll());
+
+  it("aggregates over all of the owner's completed reports, not just the first page", async () => {
+    const rows = Array.from({ length: 13 }, (_, i) =>
+      report(ALICE, `2026-10-${String(i + 1).padStart(2, '0')}T08:00:00Z`, { overallScore: 50 + i }));
+    installFakeReportTable(rows);
+
+    const summary = await interviewHistoryService.getDashboardSummary(ALICE);
+    assert.strictEqual(summary.completedInterviews, 13);
+    assert.strictEqual(summary.scoredReports, 13);
+    assert.strictEqual(summary.averageScore, 56); // (50 + ... + 62) / 13
+    assert.strictEqual(summary.bestScore, 62);
+    assert.strictEqual(summary.bestReport?.interviewId, rows[12].interviewId);
+    assert.strictEqual(summary.lastCompletedAt, '2026-10-13T08:00:00.000Z');
+  });
+
+  it('ignores other users, ownerless interviews and unfinished reports', async () => {
+    installFakeReportTable([
+      report(ALICE, '2026-10-01T10:00:00Z', { overallScore: 70 }),
+      report(ALICE, '2026-10-02T10:00:00Z', { overallScore: 81 }),
+      report(BOB, '2026-10-03T10:00:00Z', { overallScore: 100 }),
+      report(null, '2026-10-04T10:00:00Z', { overallScore: 99 }),
+      report(ALICE, '2026-10-05T10:00:00Z', { overallScore: 98, status: 'PENDING' }),
+      report(ALICE, '2026-10-06T10:00:00Z', { overallScore: 97, status: 'FAILED' }),
+    ]);
+
+    const summary = await interviewHistoryService.getDashboardSummary(ALICE);
+    assert.deepStrictEqual(
+      [summary.completedInterviews, summary.scoredReports, summary.averageScore, summary.bestScore],
+      [2, 2, 75.5, 81]
+    );
+    assert.strictEqual(summary.lastCompletedAt, '2026-10-02T10:00:00.000Z');
+
+    const bob = await interviewHistoryService.getDashboardSummary(BOB);
+    assert.deepStrictEqual([bob.completedInterviews, bob.bestScore], [1, 100]);
+  });
+
+  it('counts unscored reports as completed but leaves them out of average and best', async () => {
+    installFakeReportTable([
+      report(ALICE, '2026-10-01T10:00:00Z', { overallScore: 0 }),
+      report(ALICE, '2026-10-02T10:00:00Z', { overallScore: null }),
+      report(ALICE, '2026-10-03T10:00:00Z', { overallScore: 90 }),
+    ]);
+    const summary = await interviewHistoryService.getDashboardSummary(ALICE);
+    assert.strictEqual(summary.completedInterviews, 3);
+    assert.strictEqual(summary.scoredReports, 2);
+    assert.strictEqual(summary.averageScore, 45, 'a real score of 0 is included');
+    assert.strictEqual(summary.bestScore, 90);
+  });
+
+  it('breaks ties for best score in favour of the most recent report', async () => {
+    const older = report(ALICE, '2026-10-01T10:00:00Z', { overallScore: 88 });
+    const newer = report(ALICE, '2026-10-09T10:00:00Z', { overallScore: 88 });
+    installFakeReportTable([older, newer]);
+    const summary = await interviewHistoryService.getDashboardSummary(ALICE);
+    assert.strictEqual(summary.bestReport?.interviewId, newer.interviewId);
+  });
+
+  it('returns nulls, not zeros, when there is nothing to measure', async () => {
+    installFakeReportTable([report(BOB, '2026-10-01T10:00:00Z')]);
+    assert.deepStrictEqual(await interviewHistoryService.getDashboardSummary(ALICE), {
+      completedInterviews: 0,
+      scoredReports: 0,
+      averageScore: null,
+      bestScore: null,
+      bestReport: null,
+      lastCompletedAt: null,
+    });
+
+    mock.restoreAll();
+    installFakeReportTable([report(ALICE, '2026-10-01T10:00:00Z', { overallScore: null })]);
+    const unscored = await interviewHistoryService.getDashboardSummary(ALICE);
+    assert.deepStrictEqual(
+      [unscored.completedInterviews, unscored.averageScore, unscored.bestScore, unscored.bestReport],
+      [1, null, null, null]
+    );
   });
 });
 
@@ -261,5 +363,42 @@ describe('GET /api/interviews/history', () => {
     assert.strictEqual(getReport.mock.callCount(), 1);
     assert.strictEqual(generate.mock.callCount(), 0);
     assert.strictEqual(aiBatch.mock.callCount() + aiSingle.mock.callCount(), 0);
+  });
+
+  it('GET /summary requires a session and is scoped to the session user', async () => {
+    const summary = mock.method(interviewHistoryService, 'getDashboardSummary', async () => ({
+      completedInterviews: 0, scoredReports: 0, averageScore: null, bestScore: null, bestReport: null, lastCompletedAt: null,
+    }));
+    assert.strictEqual((await get('/api/interviews/summary')).status, 401);
+    assert.strictEqual(summary.mock.callCount(), 0);
+
+    const res = await get(`/api/interviews/summary?userId=${BOB}`, 'alice');
+    assert.strictEqual(res.status, 200);
+    assert.deepStrictEqual(summary.mock.calls[0].arguments, [ALICE]);
+  });
+
+  it("GET /summary never mixes in another user's reports", async () => {
+    installFakeReportTable([
+      report(ALICE, '2026-10-01T10:00:00Z', { overallScore: 60 }),
+      report(BOB, '2026-10-02T10:00:00Z', { overallScore: 95 }),
+      report(BOB, '2026-10-03T10:00:00Z', { overallScore: 85 }),
+    ]);
+    const alice = await (await get('/api/interviews/summary', 'alice')).json();
+    const bob = await (await get('/api/interviews/summary', 'bob')).json();
+    assert.deepStrictEqual([alice.completedInterviews, alice.averageScore, alice.bestScore], [1, 60, 60]);
+    assert.deepStrictEqual([bob.completedInterviews, bob.averageScore, bob.bestScore], [2, 90, 95]);
+  });
+
+  it('GET /summary is not shadowed by /:id and fails safely', async () => {
+    const ownership = mock.method(interviewAccess, 'isOwnedBy', async () => false);
+    const errorLog = mock.method(console, 'error', () => undefined);
+    mock.method(interviewHistoryService, 'getDashboardSummary', async () => {
+      throw Object.assign(new Error('relation "x" does not exist'), { detail: 'secret detail' });
+    });
+    const res = await get('/api/interviews/summary', 'alice');
+    assert.strictEqual(res.status, 500);
+    assert.ok(!(await res.text()).includes('secret'));
+    assert.strictEqual(ownership.mock.callCount(), 0);
+    assert.ok(!errorLog.mock.calls.some((c) => JSON.stringify(c.arguments).includes('secret detail')));
   });
 });

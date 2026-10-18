@@ -15,8 +15,9 @@ const ownsId = requireInterviewOwnership('id');
 const ownsInterview = requireInterviewOwnership('interviewId');
 
 interviewRouter.post('/', interviewController.createInterview);
-// Static path: must stay above '/:id' so "history" is not read as an interview id.
+// Static paths: must stay above '/:id' so they are not read as interview ids.
 interviewRouter.get('/history', interviewController.getInterviewHistory);
+interviewRouter.get('/summary', interviewController.getDashboardSummary);
 interviewRouter.get('/:id', ownsId, interviewController.getInterviewById);
 interviewRouter.get('/:id/questions', ownsId, interviewController.getInterviewQuestions);
 interviewRouter.post('/:id/start', ownsId, interviewController.startInterview);
