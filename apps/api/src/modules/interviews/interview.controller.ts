@@ -4,6 +4,9 @@ import { DEFAULT_DURATION_MINUTES, interviewLifecycle, isValidDuration } from '.
 import { PlannedQuestion, PlanQuestionType, PlanUnavailableError, questionCountForDuration, questionPlanService } from './question-plan.service.js';
 import { ResumeIntakeError, resumeIntakeService, sanitizeResumeProfile } from './resume-intake.service.js';
 import { interviewResearchService, ResearchResult } from './interview-research.service.js';
+import { answerTranscriptionService, TranscriptionError } from './answer-transcription.service.js';
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 import { subjectLabel } from './question-plan.service.js';
 import { IN_PROGRESS_DEFAULT_LIMIT, IN_PROGRESS_MAX_LIMIT, interviewProgressService } from './interview-progress.service.js';
 import { HISTORY_DEFAULT_LIMIT, HISTORY_MAX_LIMIT, interviewHistoryService } from './interview-history.service.js';
@@ -366,6 +369,36 @@ export const interviewController = {
       }
       // Never log resume content: only the error class.
       console.error('Failed to parse resume:', error?.name || 'Error');
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  },
+
+  /** Speech-to-text for a spoken draft. Returns text only; it never saves or evaluates an answer. */
+  transcribeAnswer: async (req: Request, res: Response) => {
+    const questionId = typeof req.query.questionId === 'string' ? req.query.questionId : '';
+    if (!UUID_PATTERN.test(questionId)) {
+      return res.status(400).json({ error: 'A valid questionId is required.' });
+    }
+    if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
+      return res.status(415).json({ error: 'Upload the recording as WAV audio.', code: 'UNSUPPORTED_TYPE' });
+    }
+    try {
+      const result = await answerTranscriptionService.transcribe({
+        interviewId: req.params.id as string,
+        questionId,
+        audio: req.body,
+        contentType: req.headers['content-type'],
+      });
+      return res.status(200).json(result);
+    } catch (error: any) {
+      if (error instanceof TranscriptionError) {
+        return res.status(error.status).json({ error: error.message, code: error.code });
+      }
+      if (error?.code === 'CONFLICT') {
+        return res.status(409).json({ error: error.message, reason: error.reason ?? 'COMPLETED' });
+      }
+      // Never log audio or transcript content: only the error class.
+      console.error('Failed to transcribe answer:', error?.name || 'Error');
       return res.status(500).json({ error: 'Internal server error' });
     }
   },

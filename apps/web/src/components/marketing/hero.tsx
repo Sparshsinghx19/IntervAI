@@ -1,16 +1,11 @@
 'use client';
 
-import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { Check } from "lucide-react";
-import { CoachLoader } from "@/components/marketing/coach/CoachFallback";
+// three.js is client-only and heavy: the coach loads in its own chunk, retrying
+// once and falling back to the static coach if that chunk can't be fetched.
+import { LazyThreeCoach as ThreeCoach } from "@/components/marketing/coach/LazyCoach";
 import { PrimaryLink, SecondaryLink, container } from "@/components/marketing/primitives";
-
-// three.js is client-only and heavy: load the 3D coach in its own chunk.
-const ThreeCoach = dynamic(
-  () => import("@/components/marketing/coach/ThreeCoach").then((m) => m.ThreeCoach),
-  { ssr: false, loading: () => <CoachLoader /> }
-);
 
 const FACTS = [
   { value: "3 tracks", detail: "Technical, behavioral, HR" },

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useSyncExternalStore } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Editor } from '@monaco-editor/react';
 import {
@@ -27,6 +27,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { NARROW_WORKSPACE_QUERY, paneStyles } from './workspace-pane-styles';
 import { codeDraftKey, codeFor, languageFor, SavedCodeSubmission, SnapshotStore } from '@/lib/interview-resume';
 import {
   fetchCodingProblem,
@@ -228,6 +229,17 @@ export function CodingWorkspace({
 
   // Layout & Resizing State
   const [layout, setLayout] = useState<WorkspaceLayoutState>(DEFAULT_LAYOUT);
+  // Narrow screens show one pane at a time, so the saved splitter sizes are not applied there.
+  const isNarrow = useSyncExternalStore(
+    (onChange) => {
+      const mql = window.matchMedia(NARROW_WORKSPACE_QUERY);
+      mql.addEventListener('change', onChange);
+      return () => mql.removeEventListener('change', onChange);
+    },
+    () => window.matchMedia(NARROW_WORKSPACE_QUERY).matches,
+    () => false
+  );
+  const panes = paneStyles(layout, isNarrow);
   const [isDraggingSplitter, setIsDraggingSplitter] = useState<'vert' | 'horiz' | 'stacked-vert' | null>(null);
   const [showLayoutMenu, setShowLayoutMenu] = useState(false);
 
@@ -756,16 +768,16 @@ export function CodingWorkspace({
   const renderEditorPane = () => (
     <div className="flex-1 flex flex-col min-h-0 h-full overflow-hidden bg-[#1e1e1e]">
       {/* Editor Toolbar (LeetCode Style) */}
-      <div className="h-10 sm:h-11 border-b border-white/10 bg-[#121824] px-3 flex items-center justify-between shrink-0 select-none">
-        <div className="flex items-center gap-2.5">
-          <Code2 className="w-4 h-4 text-brand-400" />
+      <div className="h-10 sm:h-11 border-b border-white/10 bg-[#121824] px-3 flex items-center justify-between gap-2 shrink-0 select-none">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <Code2 className="w-4 h-4 text-brand-400 shrink-0" />
 
           {/* Language Selector */}
           <div className="relative group">
             <select
               value={language}
               onChange={(e) => handleLanguageChange(e.target.value as Language)}
-              className="appearance-none bg-[#1a2130] border border-white/10 rounded text-xs font-medium text-white pl-2.5 pr-6 py-1 cursor-pointer outline-none hover:border-brand-500/50 transition-colors"
+              className="appearance-none bg-[#1a2130] border border-white/10 rounded text-xs font-medium text-white pl-2.5 pr-6 py-1 max-w-[10rem] lg:max-w-none truncate cursor-pointer outline-none hover:border-brand-500/50 focus-visible:border-brand-500/60 transition-colors"
               aria-label="Select programming language"
             >
               <option value="cpp" className="bg-obsidian">C++</option>
@@ -819,8 +831,8 @@ export function CodingWorkspace({
             )}
           </AnimatePresence>
 
-          {/* Compact Layout Selector Menu */}
-          <div className="relative" ref={layoutMenuRef}>
+          {/* Compact Layout Selector Menu (arrangements only exist where the panes sit side by side) */}
+          <div className="relative hidden lg:block" ref={layoutMenuRef}>
             <button
               type="button"
               onClick={() => setShowLayoutMenu(!showLayoutMenu)}
@@ -981,8 +993,9 @@ export function CodingWorkspace({
   const renderResultsPane = () => (
     <div className="flex-1 flex flex-col min-h-0 min-w-0 h-full overflow-hidden bg-[#0d121d]">
       {/* Tabs Bar (LeetCode Style) */}
-      <div className="h-10 sm:h-11 border-b border-white/10 bg-[#121824] px-3 flex items-center justify-between shrink-0 select-none">
-        <div className="flex items-center h-full">
+      {/* On narrow panes the Run / Submit actions wrap below the tabs instead of being clipped. */}
+      <div className="min-h-10 lg:h-11 border-b border-white/10 bg-[#121824] px-3 py-1 lg:py-0 flex flex-wrap lg:flex-nowrap items-center justify-between gap-x-2 gap-y-1 shrink-0 select-none">
+        <div className="flex items-center h-9 lg:h-full min-w-0">
           <button
             type="button"
             onClick={() => setActiveTab('testcases')}
@@ -1021,7 +1034,7 @@ export function CodingWorkspace({
         </div>
 
         {/* Live Execution Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 ml-auto">
           {problemData && !problemData.hasHiddenTests && (
             <span
               className="hidden lg:inline-flex items-center gap-1 text-[10px] text-amber-400/90 font-mono bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded"
@@ -1447,11 +1460,13 @@ export function CodingWorkspace({
       )}
 
       {/* Mobile / Small Screen View Switcher */}
-      <div className="flex lg:hidden bg-white/5 p-1 rounded-lg border border-white/10 shrink-0 mb-2">
+      <div role="tablist" aria-label="Coding workspace view" className="flex lg:hidden bg-white/5 p-1 rounded-lg border border-white/10 shrink-0 mb-2">
         <button
           type="button"
+          role="tab"
+          aria-selected={mobileView === 'problem'}
           onClick={() => setMobileView('problem')}
-          className={`flex-1 py-1.5 px-3 rounded-md text-xs font-medium flex items-center justify-center gap-2 transition-all ${
+          className={`flex-1 min-w-0 py-1.5 px-3 rounded-md text-xs font-medium flex items-center justify-center gap-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 ${
             mobileView === 'problem'
               ? 'bg-brand-500 text-white shadow-md'
               : 'text-slate-400 hover:text-white'
@@ -1461,8 +1476,10 @@ export function CodingWorkspace({
         </button>
         <button
           type="button"
+          role="tab"
+          aria-selected={mobileView === 'code'}
           onClick={() => setMobileView('code')}
-          className={`flex-1 py-1.5 px-3 rounded-md text-xs font-medium flex items-center justify-center gap-2 transition-all ${
+          className={`flex-1 min-w-0 py-1.5 px-3 rounded-md text-xs font-medium flex items-center justify-center gap-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 ${
             mobileView === 'code'
               ? 'bg-brand-500 text-white shadow-md'
               : 'text-slate-400 hover:text-white'
@@ -1539,10 +1556,8 @@ export function CodingWorkspace({
         >
           {/* Top: Problem Pane */}
           <div
-            style={{
-              flex: `0 0 calc(${layout.splitY}% - 5px)`,
-              maxHeight: `calc(${layout.splitY}% - 5px)`
-            }}
+            style={panes.problem}
+            data-testid="problem-pane"
             className={`flex flex-col min-h-0 min-w-0 overflow-hidden border border-white/10 rounded-lg shrink-0 grow-0 ${
               mobileView === 'problem' ? 'flex max-lg:!w-full max-lg:!h-full max-lg:!flex-1' : 'hidden lg:flex'
             }`}
@@ -1579,10 +1594,8 @@ export function CodingWorkspace({
           >
             {/* Editor Pane */}
             <div
-              style={{
-                flex: `0 0 calc(${layout.stackedSplitX}% - 5px)`,
-                maxWidth: `calc(${layout.stackedSplitX}% - 5px)`
-              }}
+              style={panes.editor}
+              data-testid="editor-pane"
               className="flex flex-col min-h-0 min-w-0 overflow-hidden max-lg:!w-full max-lg:!flex-1 border border-white/10 rounded-lg shrink-0 grow-0"
             >
               {renderEditorPane()}
@@ -1626,10 +1639,8 @@ export function CodingWorkspace({
         >
           {/* Left Pane: Problem Description */}
           <div
-            style={{
-              flex: `0 0 ${layout.splitX}%`,
-              maxWidth: `${layout.splitX}%`
-            }}
+            style={panes.problem}
+            data-testid="problem-pane"
             className={`flex flex-col min-h-0 min-w-0 h-full overflow-hidden border border-white/10 rounded-lg shrink-0 grow-0 ${
               mobileView === 'problem' ? 'flex max-lg:!w-full max-lg:!h-full max-lg:!flex-1' : 'hidden lg:flex'
             }`}
@@ -1666,10 +1677,8 @@ export function CodingWorkspace({
           >
             {/* Editor Pane */}
             <div
-              style={{
-                flex: `0 0 calc(${layout.splitY}% - 5px)`,
-                maxHeight: `calc(${layout.splitY}% - 5px)`
-              }}
+              style={panes.editor}
+              data-testid="editor-pane"
               className="flex flex-col min-h-0 min-w-0 overflow-hidden max-lg:!flex-1 border border-white/10 rounded-lg shrink-0 grow-0"
             >
               {renderEditorPane()}

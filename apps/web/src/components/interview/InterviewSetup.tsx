@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import {
   ChevronRight,
-  BrainCircuit,
   Loader2,
   Layers,
   Gauge,
@@ -28,6 +27,8 @@ import {
   validateSetup,
 } from '@/lib/adaptive-setup';
 import { ResumeInput } from './ResumeInput';
+import { LazyCompactCoach } from '@/components/marketing/coach/LazyCoach';
+import { setupCompanion } from '@/lib/companion-status';
 import { SelectorCard } from './SelectorCard';
 import {
   interviewTypes,
@@ -102,6 +103,7 @@ export function InterviewSetup() {
   const stepNo = (key: string) => String(steps.findIndex((st) => st.key === key) + 1).padStart(2, '0');
   const completedCount = steps.filter((st) => st.done).length;
   const totalSteps = steps.length;
+  const companion = setupCompanion({ isPreparing, isValid, completed: completedCount, total: totalSteps });
   const plannedQuestionCount = { 15: 4, 30: 6, 45: 8, 60: 10 }[parseInt(duration, 10) as 15 | 30 | 45 | 60] ?? 6;
 
   const toggleQuestionType = (t: SetupQuestionType) =>
@@ -427,11 +429,9 @@ export function InterviewSetup() {
               <div className="absolute inset-0 bg-gradient-to-br from-brand-900/25 via-transparent to-cyan-900/15 pointer-events-none" />
 
               <div className="relative z-10 flex items-center gap-3.5">
-                {/* Compact Animated AI Avatar */}
-                <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center relative shrink-0 shadow-inner">
-                  <div className="absolute inset-0 rounded-xl border border-brand-500/30 animate-[spin_6s_linear_infinite]" />
-                  <div className="absolute inset-1.5 rounded-lg border border-cyan-500/25 animate-[spin_8s_linear_infinite_reverse]" />
-                  <BrainCircuit className="w-6 h-6 text-brand-300" />
+                {/* Compact animated coach (thinks only while the interview is actually being prepared) */}
+                <div className="w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-xl bg-white/[0.03] border border-white/10 relative shrink-0 overflow-hidden">
+                  <LazyCompactCoach variant="compact" mood={companion.mood} className="h-full" />
                 </div>
 
                 <div className="flex-1 min-w-0">
@@ -457,10 +457,10 @@ export function InterviewSetup() {
                 >
                   <span
                     className={`w-1.5 h-1.5 rounded-full ${
-                      isValid ? 'bg-cyan-400 shadow-[0_0_8px_#22d3ee]' : 'bg-slate-500'
+                      isPreparing ? 'bg-cyan-400 animate-pulse' : isValid ? 'bg-cyan-400 shadow-[0_0_8px_#22d3ee]' : 'bg-slate-500'
                     }`}
                   />
-                  {isValid ? 'Ready to initiate' : `${completedCount}/${totalSteps} configured`}
+                  <span role="status" aria-live="polite">{companion.label}</span>
                 </span>
               </div>
             </Card>

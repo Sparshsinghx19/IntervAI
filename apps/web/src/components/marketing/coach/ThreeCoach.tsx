@@ -3,9 +3,9 @@
 import { Component, Suspense, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
-import { CoachScene } from './CoachScene';
+import { COMPACT_FRAME, CoachScene } from './CoachScene';
 import { CoachStaticFallback } from './CoachFallback';
-import type { CoachPointer, ThreeCoachProps } from './types';
+import type { CoachPointer, CoachVariant, ThreeCoachProps } from './types';
 
 function useMediaQuery(query: string, serverValue = false) {
   return useSyncExternalStore(
@@ -34,17 +34,28 @@ function detectWebGL() {
 const noopSubscribe = () => () => {};
 
 /** Renders the static fallback if the WebGL renderer fails to start. */
-class WebGLBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+class WebGLBoundary extends Component<{ children: ReactNode; variant: CoachVariant }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() {
     return { failed: true };
   }
   render() {
-    return this.state.failed ? <CoachStaticFallback /> : this.props.children;
+    return this.state.failed ? <CoachStaticFallback variant={this.props.variant} /> : this.props.children;
   }
 }
 
-export function ThreeCoach({ className }: ThreeCoachProps) {
+// Full body for the landing hero; head and shoulders for small panels.
+const CAMERAS = {
+  hero: { position: [0, 0.16, 9] as [number, number, number], fov: 26 },
+  compact: { position: [0, 0, COMPACT_FRAME.distance] as [number, number, number], fov: COMPACT_FRAME.fov },
+};
+
+// Compact portrait: a soft violet backdrop and a fade below the chest, so the bust reads as framed, not cropped.
+const COMPACT_PORTRAIT =
+  'bg-[radial-gradient(circle_at_50%_40%,rgba(139,92,246,0.22),transparent_70%)] [mask-image:linear-gradient(to_bottom,black_80%,transparent)]';
+
+export function ThreeCoach({ className, mood = 'idle', variant = 'hero' }: ThreeCoachProps) {
+  const compact = variant === 'compact';
   const containerRef = useRef<HTMLDivElement>(null);
   const pointer = useRef<CoachPointer>({ x: 0, y: 0, active: false, lastMove: 0 });
   const [visible, setVisible] = useState(true);
@@ -54,8 +65,10 @@ export function ThreeCoach({ className }: ThreeCoachProps) {
   const finePointer = useMediaQuery('(hover: hover) and (pointer: fine)', true);
   const smallScreen = useMediaQuery('(max-width: 767px)');
   const cores = useSyncExternalStore(noopSubscribe, () => navigator.hardwareConcurrency || 8, () => 8);
-  const lowPower = smallScreen || !finePointer || cores <= 4;
-  const allowDrag = finePointer && !reducedMotion;
+  // Compact panels are small: render cheaply and never capture pointer input.
+  const lowPower = compact || smallScreen || !finePointer || cores <= 4;
+  const allowDrag = !compact && finePointer && !reducedMotion;
+  const trackPointer = !compact && finePointer && !reducedMotion;
 
   // Pause rendering while the hero is off-screen.
   useEffect(() => {
@@ -68,7 +81,7 @@ export function ThreeCoach({ className }: ThreeCoachProps) {
 
   // Page-wide pointer tracking (desktop only) — written to a ref, read in the frame loop.
   useEffect(() => {
-    if (!finePointer || reducedMotion) {
+    if (!trackPointer) {
       pointer.current.active = false;
       return;
     }
@@ -93,27 +106,29 @@ export function ThreeCoach({ className }: ThreeCoachProps) {
       window.removeEventListener('pointermove', onMove);
       document.documentElement.removeEventListener('pointerleave', onLeave);
     };
-  }, [finePointer, reducedMotion]);
+  }, [trackPointer]);
 
   return (
     <div
       ref={containerRef}
       // The parent decides the size. Touch / reduced-motion visitors get no drag, so the canvas never captures scrolling.
-      className={`relative w-full flex items-center justify-center ${allowDrag ? 'pointer-events-auto' : 'pointer-events-none'} ${className ?? 'h-[400px] lg:h-[550px]'}`}
+      className={`relative w-full flex items-center justify-center ${allowDrag ? 'pointer-events-auto' : 'pointer-events-none'} ${compact ? COMPACT_PORTRAIT : ''} ${className ?? (compact ? 'h-24' : 'h-[400px] lg:h-[550px]')}`}
+      // The compact companion is decorative; its status is given as text next to it.
+      aria-hidden={compact || undefined}
     >
       {hasWebGL ? (
-        <WebGLBoundary>
+        <WebGLBoundary variant={variant}>
           <Canvas
-            camera={{ position: [0, 0.16, 9], fov: 26, near: 0.1, far: 50 }}
-            dpr={[1, lowPower ? 1.25 : 1.75]}
+            camera={{ ...CAMERAS[variant], near: 0.1, far: 50 }}
+            dpr={[1, compact ? 1.5 : lowPower ? 1.25 : 1.75]}
             frameloop={visible ? 'always' : 'never'}
             gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
             onCreated={({ gl }) => {
               gl.toneMapping = THREE.NeutralToneMapping;
               gl.toneMappingExposure = 1.0;
             }}
-            fallback={<CoachStaticFallback />}
-            aria-label="Interactive 3D IntervAI coach"
+            fallback={<CoachStaticFallback variant={variant} />}
+            aria-label={compact ? undefined : 'Interactive 3D IntervAI coach'}
           >
             <Suspense fallback={null}>
               <CoachScene
@@ -121,12 +136,14 @@ export function ThreeCoach({ className }: ThreeCoachProps) {
                 reducedMotion={reducedMotion}
                 lowPower={lowPower}
                 allowDrag={allowDrag}
+                mood={mood}
+                variant={variant}
               />
             </Suspense>
           </Canvas>
         </WebGLBoundary>
       ) : (
-        <CoachStaticFallback />
+        <CoachStaticFallback variant={variant} />
       )}
     </div>
   );

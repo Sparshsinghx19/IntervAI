@@ -7,6 +7,9 @@ import { RequireAuth } from '@/components/auth/RequireAuth';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { questionOriginLabel, researchNote } from '@/lib/adaptive-setup';
 import { CODING_UNAVAILABLE_NOTE, workspaceFor } from '@/lib/workspace-mode';
+import { sessionCompanion } from '@/lib/companion-status';
+import { VoiceAnswer } from '@/components/interview/VoiceAnswer';
+import { LazyCompactCoach } from '@/components/marketing/coach/LazyCoach';
 import { QuestionSource, SourcesDisclosure } from '@/components/interview/SourcesDisclosure';
 import {
   answerTextFor,
@@ -61,7 +64,6 @@ import {
 import { SubmitCodeResponse } from '@/lib/coding-api';
 
 
-type AIStatus = 'LISTENING' | 'EVALUATING' | 'COMPLETED';
 
 interface QuestionItem {
   id: string | number;
@@ -137,7 +139,6 @@ function InterviewSessionContent() {
   const [reportError, setReportError] = useState<string>('');
 
   // AI State
-  const [aiStatus, setAiStatus] = useState<AIStatus>('LISTENING');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Load or generate consolidated evaluation report
@@ -222,7 +223,6 @@ function InterviewSessionContent() {
             setTimeUpNotice('The time limit for this interview ended. Only answers submitted before the deadline are evaluated.');
           }
           setIsInterviewComplete(true);
-          setAiStatus('COMPLETED');
           loadEvaluationReport();
           return;
         }
@@ -348,7 +348,6 @@ function InterviewSessionContent() {
     }
 
     setIsInterviewComplete(true);
-    setAiStatus('COMPLETED');
     loadEvaluationReport();
   };
 
@@ -376,6 +375,7 @@ function InterviewSessionContent() {
   // The workspace follows the current question's type (never a previous question's mode).
   const workspace = workspaceFor(currentQuestion);
   const isCodingQuestion = workspace.mode === 'code';
+  const lockViewport = isCodingQuestion || isInterviewComplete;
   const isFinalQuestion = questions.length > 0 && currentIndex === questions.length - 1;
   const answeredCount = progress ? countAnswered(questions, progress) : 0;
 
@@ -488,7 +488,6 @@ function InterviewSessionContent() {
       const nextQuestionId = String(questions[nextIndex]?.id);
       setCurrentIndex(nextIndex);
       setAnswer(textFor(nextQuestionId, savedAnswersByQuestion));
-      setAiStatus('LISTENING');
     }
   };
 
@@ -542,7 +541,6 @@ function InterviewSessionContent() {
       setAnswer(textFor(nextQuestionId, updatedAnswers));
       setEvaluationStage('idle');
       setIsSubmitting(false);
-      setAiStatus('LISTENING');
       return;
     }
 
@@ -554,7 +552,6 @@ function InterviewSessionContent() {
         if (interviewData.status === 'COMPLETED') {
           setIsSubmitting(false);
           setIsInterviewComplete(true);
-          setAiStatus('COMPLETED');
           loadEvaluationReport();
           return;
         }
@@ -580,7 +577,6 @@ function InterviewSessionContent() {
     // Transition to batch report evaluation
     setIsSubmitting(false);
     setIsInterviewComplete(true);
-    setAiStatus('COMPLETED');
     loadEvaluationReport();
   };
 
@@ -628,7 +624,6 @@ function InterviewSessionContent() {
       setAnswer(textFor(nextQuestionId, updatedAnswers));
       setEvaluationStage('idle');
       setIsSubmitting(false);
-      setAiStatus('LISTENING');
       return;
     }
 
@@ -640,7 +635,6 @@ function InterviewSessionContent() {
         if (interviewData.status === 'COMPLETED') {
           setIsSubmitting(false);
           setIsInterviewComplete(true);
-          setAiStatus('COMPLETED');
           loadEvaluationReport();
           return;
         }
@@ -651,7 +645,6 @@ function InterviewSessionContent() {
 
     setIsSubmitting(false);
     setIsInterviewComplete(true);
-    setAiStatus('COMPLETED');
     loadEvaluationReport();
   };
 
@@ -686,7 +679,6 @@ function InterviewSessionContent() {
       setAnswer(textFor(nextQuestionId, updatedAnswers));
       setEvaluationStage('idle');
       setIsSubmitting(false);
-      setAiStatus('LISTENING');
       return;
     }
 
@@ -711,7 +703,6 @@ function InterviewSessionContent() {
         if (interviewData.status === 'COMPLETED') {
           setIsSubmitting(false);
           setIsInterviewComplete(true);
-          setAiStatus('COMPLETED');
           loadEvaluationReport();
           return;
         }
@@ -722,7 +713,6 @@ function InterviewSessionContent() {
 
     setIsSubmitting(false);
     setIsInterviewComplete(true);
-    setAiStatus('COMPLETED');
     loadEvaluationReport();
   };
 
@@ -764,102 +754,71 @@ function InterviewSessionContent() {
   const wordCount = answer.trim() ? answer.trim().split(/\s+/).length : 0;
   const charCount = answer.length;
 
-  // Secondary AI Companion Panel
-  const renderAIPanel = () => {
-    let aiVisuals = '';
-    let aiText = '';
+  // AI companion: mood and text come from real request state, never from timers.
+  const companion = sessionCompanion({ evaluationStage, isGeneratingReport, isInterviewComplete, timeUp });
+  const companionText = {
+    ready: 'text-slate-300',
+    busy: 'text-cyan-300',
+    success: 'text-emerald-300',
+    error: 'text-rose-300',
+    done: 'text-emerald-300',
+  }[companion.tone];
+  const companionDot = {
+    ready: 'bg-brand-400',
+    busy: 'bg-cyan-400 animate-pulse',
+    success: 'bg-emerald-400',
+    error: 'bg-rose-400',
+    done: 'bg-emerald-400',
+  }[companion.tone];
 
-    if (evaluationStage === 'saving') {
-      aiVisuals = 'border-brand-500/50 animate-[pulse_0.8s_ease-in-out_infinite] bg-brand-900/20 shadow-[0_0_15px_rgba(139,92,246,0.3)] text-brand-300';
-      aiText = 'Saving response to server...';
-    } else if (evaluationStage === 'saved') {
-      aiVisuals = 'border-emerald-500/40 bg-emerald-950/20 text-emerald-300';
-      aiText = 'Answer saved securely.';
-    } else if (isGeneratingReport) {
-      aiVisuals = 'border-cyan-500/50 animate-[pulse_0.5s_ease-in-out_infinite] bg-cyan-900/20 shadow-[0_0_15px_rgba(6,182,212,0.3)] text-cyan-300';
-      aiText = 'AI evaluating all responses...';
-    } else if (isInterviewComplete) {
-      aiVisuals = 'border-emerald-500/40 bg-emerald-950/20 text-emerald-300';
-      aiText = 'Evaluation report ready.';
-    } else if (evaluationStage === 'save_error') {
-      aiVisuals = 'border-rose-500/40 bg-rose-950/20 text-rose-300';
-      aiText = 'Failed to save response.';
-    } else if (aiStatus === 'LISTENING') {
-      aiVisuals = 'border-brand-500/30 animate-pulse bg-brand-900/10 text-brand-300';
-      aiText = 'Listening to your thoughts...';
-    } else {
-      aiVisuals = 'border-white/10 bg-white/5 text-slate-500';
-      aiText = 'Session Completed';
-    }
-
-    return (
-      <div className="relative rounded-2xl overflow-hidden glass-card p-4 border border-white/10 flex flex-col transition-all duration-500">
-        <div className={`absolute inset-0 z-0 transition-colors duration-500 ${
-          isGeneratingReport || evaluationStage === 'saving'
+  // Secondary AI Companion Panel (stays mounted across questions, so the 3D scene is not rebuilt)
+  const renderAIPanel = () => (
+    <div className="relative rounded-2xl overflow-hidden glass-card p-3 sm:p-4 border border-white/10 flex items-center gap-3 sm:gap-4">
+      <div
+        className={`absolute inset-0 z-0 transition-colors duration-500 ${
+          companion.tone === 'busy'
             ? 'bg-gradient-to-br from-brand-900/30 to-cyan-900/30'
-            : isInterviewComplete || evaluationStage === 'saved'
+            : companion.tone === 'success' || companion.tone === 'done'
             ? 'bg-gradient-to-br from-emerald-950/20 to-obsidian'
             : 'bg-gradient-to-br from-brand-900/10 to-obsidian'
-        }`} />
-
-        <div className="relative z-10 flex items-center gap-3.5">
-          <div className={`w-12 h-12 rounded-full border flex items-center justify-center relative shrink-0 transition-all duration-500 ${aiVisuals}`}>
-            {(isGeneratingReport || evaluationStage === 'saving') && (
-              <>
-                <div className="absolute inset-0 rounded-full border-t-2 border-cyan-400 animate-[spin_1s_linear_infinite]" />
-                <div className="absolute inset-1 rounded-full border-b-2 border-brand-400 animate-[spin_1.5s_linear_infinite_reverse]" />
-              </>
-            )}
-            {aiStatus === 'LISTENING' && evaluationStage === 'idle' && (
-              <div className="absolute inset-0 rounded-full border border-brand-500/40 animate-[ping_3s_cubic-bezier(0,0,0.2,1)_infinite]" />
-            )}
-            <BrainCircuit className="w-5 h-5" />
-          </div>
-
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="text-xs uppercase tracking-wider font-semibold text-slate-400">AI Companion</span>
-              <span className={`inline-block w-2 h-2 rounded-full ${
-                isGeneratingReport || evaluationStage === 'saving'
-                  ? 'bg-cyan-400 animate-ping'
-                  : isInterviewComplete || evaluationStage === 'saved'
-                  ? 'bg-emerald-400'
-                  : evaluationStage === 'save_error'
-                  ? 'bg-rose-400'
-                  : 'bg-brand-400'
-              }`} />
-            </div>
-            <p className={`text-xs sm:text-sm font-medium mt-0.5 truncate ${
-              isGeneratingReport
-                ? 'text-cyan-300'
-                : isInterviewComplete || evaluationStage === 'saved'
-                ? 'text-emerald-300'
-                : evaluationStage === 'save_error'
-                ? 'text-rose-300'
-                : 'text-slate-300'
-            }`}>
-              {aiText}
-            </p>
-          </div>
-        </div>
+        }`}
+      />
+      <div className="relative z-10 w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 shrink-0 rounded-xl bg-white/[0.03] border border-white/10 overflow-hidden">
+        <LazyCompactCoach variant="compact" mood={companion.mood} className="h-full" />
       </div>
-    );
-  };
+      <div className="relative z-10 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="text-xs uppercase tracking-wider font-semibold text-slate-400">AI Companion</span>
+          <span className={`inline-block w-2 h-2 rounded-full ${companionDot}`} aria-hidden="true" />
+        </div>
+        <p role="status" aria-live="polite" className={`text-xs sm:text-sm font-medium mt-0.5 ${companionText}`} data-testid="companion-status">
+          {companion.label}
+        </p>
+      </div>
+    </div>
+  );
 
 
   return (
-    <div className="min-h-screen h-screen max-h-screen bg-obsidian text-foreground selection:bg-brand-500/30 flex flex-col overflow-hidden">
+    <div
+      className={`min-h-screen bg-obsidian text-foreground selection:bg-brand-500/30 flex flex-col ${
+        // The coding workspace and the report manage their own panes, so they keep the
+        // viewport-locked layout. Theory questions lock only on wide screens; narrower
+        // screens use normal page flow so the editor and actions are never squeezed.
+        lockViewport ? 'h-screen max-h-screen overflow-hidden' : 'lg:h-screen lg:max-h-screen lg:overflow-hidden'
+      }`}
+    >
       <Navbar mode="session" />
       <div className="absolute inset-0 bg-grid-pattern opacity-40 pointer-events-none" />
       <div className="absolute inset-0 bg-glow-gradient opacity-20 pointer-events-none" />
 
       {/* Full-Viewport Main Session Shell */}
-      <div className="relative z-10 flex-1 flex flex-col pt-18 pb-3 px-3 sm:px-6 max-w-[1800px] w-full mx-auto min-h-0 h-full overflow-hidden">
+      <div className={`relative z-10 flex-1 flex flex-col pt-18 pb-3 px-3 sm:px-6 max-w-[1800px] w-full mx-auto min-w-0 ${lockViewport ? 'min-h-0 h-full overflow-hidden' : 'lg:min-h-0 lg:h-full lg:overflow-hidden'}`}>
 
         {/* Top Session Navigation & Context Bar */}
-        <div className="h-12 flex items-center justify-between border-b border-white/10 pb-2 mb-2 shrink-0">
+        <div className="min-h-12 flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-2 mb-2 shrink-0">
           {/* Left: Question Progress, Difficulty & Focus */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 min-w-0">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-300 text-xs font-semibold">
               <span>Question {currentIndex + 1}</span>
               <span className="text-slate-500">/</span>
@@ -914,8 +873,8 @@ function InterviewSessionContent() {
             )}
 
             <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-slate-300">
-              <BrainCircuit className={`w-3.5 h-3.5 ${aiStatus === 'EVALUATING' ? 'text-cyan-400 animate-spin' : 'text-brand-400'}`} />
-              <span className="hidden md:inline">{aiStatus === 'LISTENING' ? 'AI: Listening' : aiStatus === 'EVALUATING' ? 'AI: Analyzing...' : 'Completed'}</span>
+              <BrainCircuit className={`w-3.5 h-3.5 ${companion.tone === 'busy' ? 'text-cyan-400 animate-pulse' : 'text-brand-400'}`} aria-hidden="true" />
+              <span className="hidden md:inline">AI: {companion.short}</span>
             </div>
           </div>
         </div>
@@ -969,17 +928,17 @@ function InterviewSessionContent() {
           /* ======================================================== */
           /* FULL-VIEWPORT PROFESSIONAL THEORY INTERVIEW UI          */
           /* ======================================================== */
-          <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-3.5 overflow-hidden">
+          <div className="flex-1 flex flex-col lg:flex-row gap-3.5 lg:min-h-0 lg:overflow-hidden" data-testid="theory-layout">
 
             {/* ---------------------------------------------------- */}
             {/* Left Column: 70% Primary Q&A Workspace               */}
             {/* ---------------------------------------------------- */}
-            <div className="w-full lg:w-[70%] flex flex-col min-h-0 overflow-hidden gap-3">
+            <div className="w-full lg:w-[70%] flex flex-col gap-3 min-w-0 lg:min-h-0 lg:overflow-hidden">
 
               {/* Question Header Card (Compact & Clear) */}
-              <Card className="glass-card-strong border-white/10 p-5 shrink-0 overflow-hidden relative">
+              <Card className="glass-card-strong border-white/10 p-4 sm:p-5 shrink-0 overflow-hidden relative">
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 min-w-0">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-300 text-xs font-semibold uppercase tracking-wider">
                       Question {currentIndex + 1} of {questions.length}
                     </span>
@@ -1015,7 +974,7 @@ function InterviewSessionContent() {
               </Card>
 
               {/* Answer Editor Card (Primary Focus, Flexes Vertically) */}
-              <Card className="glass-card border-white/10 flex-1 min-h-0 flex flex-col p-5 overflow-hidden gap-3">
+              <Card className="glass-card border-white/10 flex flex-col p-4 sm:p-5 gap-3 lg:flex-1 lg:min-h-0 lg:overflow-hidden" data-testid="answer-editor">
                 {/* Header Row with labels, live metrics, and keyboard hint */}
                 <div className="flex flex-wrap items-center justify-between gap-2 shrink-0 border-b border-white/5 pb-2.5">
                   <div className="flex items-center gap-2">
@@ -1047,8 +1006,23 @@ function InterviewSessionContent() {
                   </div>
                 </div>
 
+                {/* Optional voice answer: fills the editor for review; never submits */}
+                <div className="shrink-0">
+                  <VoiceAnswer
+                    interviewId={id as string}
+                    questionId={currentQuestionId}
+                    text={answer}
+                    onTextChange={(text) => {
+                      setAnswer(text);
+                      recordAnswerDraft(text);
+                      if (validationError) setValidationError('');
+                    }}
+                    disabled={isSubmitting || evaluationStage === 'saving' || timeUp}
+                  />
+                </div>
+
                 {/* Flexible Response Textarea */}
-                <div className="flex-1 min-h-0 relative flex flex-col">
+                <div className="flex flex-col lg:flex-1 lg:min-h-0">
                   <textarea
                     value={answer}
                     onChange={(e) => {
@@ -1063,7 +1037,8 @@ function InterviewSessionContent() {
 1. Core Concept & Key Definition
 2. Technical Mechanism & Architectural Considerations
 3. Trade-offs, Edge Cases, or Real-world Examples...`}
-                    className="w-full h-full min-h-[220px] lg:min-h-0 flex-1 bg-black/40 border border-white/10 rounded-xl p-4 sm:p-5 text-base text-slate-100 placeholder:text-slate-500 leading-relaxed font-sans focus:outline-none focus:border-brand-500/60 focus:ring-1 focus:ring-brand-500/40 resize-none overflow-y-auto transition-all disabled:opacity-60"
+                    aria-label="Candidate response"
+                    className="w-full min-h-[220px] sm:min-h-[260px] lg:min-h-0 lg:h-full lg:flex-1 bg-black/40 border border-white/10 rounded-xl p-4 sm:p-5 text-base text-slate-100 placeholder:text-slate-500 leading-relaxed font-sans focus:outline-none focus:border-brand-500/60 focus:ring-1 focus:ring-brand-500/40 resize-none overflow-y-auto transition-all disabled:opacity-60"
                   />
                 </div>
 
@@ -1109,10 +1084,10 @@ function InterviewSessionContent() {
                 </AnimatePresence>
 
                 {/* Accessible Action Row */}
-                <div className="flex items-center justify-between gap-3 pt-2 shrink-0 border-t border-white/5">
+                <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 pt-2 shrink-0 border-t border-white/5" data-testid="answer-actions">
                   <Button
                     variant="outline"
-                    className="border-white/10 hover:bg-white/5 text-slate-300 h-10 px-5 text-xs font-medium"
+                    className="border-white/10 hover:bg-white/5 text-slate-300 h-10 px-5 text-xs font-medium w-full sm:w-auto"
                     onClick={handleSkip}
                     disabled={isSubmitting || evaluationStage === 'saving'}
                   >
@@ -1122,7 +1097,7 @@ function InterviewSessionContent() {
 
                   <Button
                     variant="glow"
-                    className="h-10 px-7 text-xs font-semibold relative overflow-hidden"
+                    className="h-10 px-7 text-xs font-semibold relative overflow-hidden w-full sm:w-auto"
                     onClick={handleSubmit}
                     disabled={isSubmitting || evaluationStage === 'saving'}
                   >
@@ -1151,7 +1126,7 @@ function InterviewSessionContent() {
             {/* ---------------------------------------------------- */}
             {/* Right Column: 30% Compact Sidebar                    */}
             {/* ---------------------------------------------------- */}
-            <div className="w-full lg:w-[30%] flex flex-col gap-3 min-h-0 overflow-y-auto shrink-0">
+            <div className="w-full lg:w-[30%] flex flex-col gap-3 shrink-0 min-w-0 lg:min-h-0 lg:overflow-y-auto">
 
               {/* AI Companion Card */}
               {renderAIPanel()}

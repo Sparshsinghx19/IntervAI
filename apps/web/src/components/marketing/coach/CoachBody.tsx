@@ -1,11 +1,11 @@
 'use client';
 
-import { useMemo, useRef, type MutableRefObject } from 'react';
+import { useEffect, useMemo, useRef, type MutableRefObject } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { facePointAt, headNormalAt, headPoint, headPointAt } from './geometry';
 import { BODY, EYE, type CoachAnchors, type CoachGeometries, type CoachMaterials } from './useCoachAssets';
-import type { CoachPointer } from './types';
+import type { CoachMood, CoachPointer } from './types';
 
 interface CoachBodyProps {
   geometries: CoachGeometries;
@@ -13,6 +13,7 @@ interface CoachBodyProps {
   materials: CoachMaterials;
   pointer: MutableRefObject<CoachPointer>;
   reducedMotion: boolean;
+  mood?: CoachMood;
 }
 
 const UP = new THREE.Vector3(0, 1, 0);
@@ -39,7 +40,7 @@ function quatFromTo(from: THREE.Vector3, to: THREE.Vector3) {
   return new THREE.Quaternion().setFromUnitVectors(from, to.clone().normalize());
 }
 
-export function CoachBody({ geometries: g, anchors, materials: m, pointer, reducedMotion }: CoachBodyProps) {
+export function CoachBody({ geometries: g, anchors, materials: m, pointer, reducedMotion, mood = 'idle' }: CoachBodyProps) {
   const rootRef = useRef<THREE.Group>(null);
   const upperRef = useRef<THREE.Group>(null);
   const headRef = useRef<THREE.Group>(null);
@@ -50,6 +51,7 @@ export function CoachBody({ geometries: g, anchors, materials: m, pointer, reduc
   const arcRefs = useRef<(THREE.Group | null)[]>([]);
   const ovalRefs = useRef<(THREE.Group | null)[]>([]);
   const emblemGlowRef = useRef<THREE.Mesh>(null);
+  const eyeHaloRef = useRef<THREE.Mesh>(null);
   const emblemRingRef = useRef<THREE.Mesh>(null);
 
   // Mutable animation state — never touches React state.
@@ -62,6 +64,12 @@ export function CoachBody({ geometries: g, anchors, materials: m, pointer, reduc
     glanceX: 0,
     glanceY: 0,
   });
+
+  // Read by the frame loop, so a mood change never re-creates the scene.
+  const moodRef = useRef<CoachMood>(mood);
+  useEffect(() => {
+    moodRef.current = mood;
+  }, [mood]);
 
   // Surface-anchored placements, computed once from the helmet math.
   const layout = useMemo(() => {
@@ -102,6 +110,8 @@ export function CoachBody({ geometries: g, anchors, materials: m, pointer, reduc
     const a = anim.current;
     const motion = reducedMotion ? 0 : 1;
     const damp = THREE.MathUtils.damp;
+    const thinking = moodRef.current === 'thinking';
+    const complete = moodRef.current === 'complete';
 
     // --- Gaze target: pointer when it moved recently, otherwise occasional idle glances.
     const p = pointer.current;
@@ -112,12 +122,15 @@ export function CoachBody({ geometries: g, anchors, materials: m, pointer, reduc
       a.glanceY = rest ? 0 : (Math.random() * 2 - 1) * 0.1;
       a.nextGlance = t + 2.8 + Math.random() * 3.6;
     }
-    const yaw = pointerActive ? p.x * 0.5 : a.glanceX * motion;
-    const pitch = pointerActive ? p.y * 0.22 : (a.glanceY + (a.curious ? -0.06 : 0)) * motion;
+    // Thinking: a steady, slightly raised gaze to one side instead of wandering glances.
+    const yaw = thinking ? 0.2 * motion : pointerActive ? p.x * 0.5 : a.glanceX * motion;
+    const pitch = thinking ? -0.11 * motion : pointerActive ? p.y * 0.22 : (a.glanceY + (a.curious ? -0.06 : 0)) * motion;
+    const curious = thinking ? true : complete ? false : a.curious;
+    const floatSpeed = complete ? 0.7 : 1.05;
 
     // --- Float + posture.
     if (rootRef.current) {
-      rootRef.current.position.y = Math.sin(t * 1.05) * 0.04 * motion;
+      rootRef.current.position.y = Math.sin(t * floatSpeed) * (complete ? 0.025 : 0.04) * motion;
     }
     if (upperRef.current) {
       const u = upperRef.current.rotation;
@@ -129,10 +142,10 @@ export function CoachBody({ geometries: g, anchors, materials: m, pointer, reduc
       const h = headRef.current.rotation;
       h.y = damp(h.y, yaw, 3.4, dt);
       h.x = damp(h.x, pitch + Math.sin(t * 1.05 + 1.2) * 0.012 * motion, 3.4, dt);
-      h.z = damp(h.z, -yaw * 0.1 + Math.sin(t * 0.42) * 0.03 * motion + (a.curious ? 0.07 : 0) * motion, 2.4, dt);
+      h.z = damp(h.z, -yaw * 0.1 + Math.sin(t * 0.42) * 0.03 * motion + (curious ? 0.07 : 0) * motion, 2.4, dt);
     }
     if (antennaRef.current) {
-      antennaRef.current.rotation.z = Math.sin(t * 2.2) * 0.025 * motion;
+      antennaRef.current.rotation.z = Math.sin(t * (thinking ? 5.5 : 2.2)) * (thinking ? 0.05 : 0.025) * motion;
     }
 
     // --- Restrained arm sway, slightly out of phase with the float.
@@ -170,12 +183,16 @@ export function CoachBody({ geometries: g, anchors, materials: m, pointer, reduc
       if (eye) eye.scale.y = 1 - 0.9 * blink;
       const arc = arcRefs.current[i];
       const oval = ovalRefs.current[i];
-      if (arc) arc.scale.setScalar(damp(arc.scale.x, a.curious ? 0.001 : 1, 16, dt));
-      if (oval) oval.scale.setScalar(damp(oval.scale.x, a.curious ? 1 : 0.001, 16, dt));
+      if (arc) arc.scale.setScalar(damp(arc.scale.x, curious ? 0.001 : 1, 16, dt));
+      if (oval) oval.scale.setScalar(damp(oval.scale.x, curious ? 1 : 0.001, 16, dt));
     }
 
     // --- Chest emblem + ear rings breathe together.
-    const pulse = 0.5 + 0.5 * Math.sin(t * (reducedMotion ? 0.8 : 1.9));
+    const pulseRate = reducedMotion ? 0.8 : thinking ? 3.4 : complete ? 0.9 : 1.9;
+    const pulse = 0.5 + 0.5 * Math.sin(t * pulseRate);
+    // Eye halos breathe softly; brighter while thinking.
+    const halo = eyeHaloRef.current?.material as THREE.MeshBasicMaterial | undefined;
+    if (halo) halo.opacity = thinking ? 0.4 + 0.18 * pulse : 0.3 + 0.1 * pulse;
     const glow = emblemGlowRef.current?.material as THREE.MeshBasicMaterial | undefined;
     if (glow) glow.opacity = 0.32 + 0.3 * pulse;
     const ring = emblemRingRef.current?.material as THREE.MeshBasicMaterial | undefined;
@@ -303,7 +320,8 @@ export function CoachBody({ geometries: g, anchors, materials: m, pointer, reduc
                     }}>
                         <group position={eye.back}>
                           <mesh geometry={i === 0 ? g.eyeLeft : g.eyeRight} material={m.glowCore} />
-                          <mesh geometry={i === 0 ? g.eyeHaloLeft : g.eyeHaloRight} material={m.glowHalo} />
+                          {/* Both halos share one material, so one ref drives the glow of both eyes. */}
+                          <mesh ref={i === 0 ? eyeHaloRef : undefined} geometry={i === 0 ? g.eyeHaloLeft : g.eyeHaloRight} material={m.glowHalo} />
                         </group>
                       </group>
                       <group ref={(el) => {

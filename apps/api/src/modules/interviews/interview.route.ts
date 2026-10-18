@@ -6,6 +6,7 @@ import { requireAuth } from '../auth/auth.middleware.js';
 import { requireInterviewOwnership } from '../auth/interview-access.js';
 import { createRateLimiter } from '../auth/rate-limit.js';
 import { DOCX_MIME, PDF_MIME, RESUME_MAX_FILE_BYTES } from './resume-intake.service.js';
+import { TRANSCRIBE_MAX_BYTES, WAV_MIME_TYPES } from './answer-transcription.service.js';
 
 const interviewRouter = Router();
 
@@ -20,6 +21,12 @@ export const resumeParseLimiter = createRateLimiter({
   windowMs: 10 * 60 * 1000,
   max: 10,
   key: (req) => (req.principal ? `resume:${req.principal.userId}` : null),
+});
+// Each transcription calls the model; bound it per signed-in user.
+export const transcribeLimiter = createRateLimiter({
+  windowMs: 10 * 60 * 1000,
+  max: 30,
+  key: (req) => (req.principal ? `transcribe:${req.principal.userId}` : null),
 });
 const ownsInterview = requireInterviewOwnership('interviewId');
 
@@ -40,6 +47,14 @@ interviewRouter.get('/:id/questions', ownsId, interviewController.getInterviewQu
 interviewRouter.get('/:id/progress', ownsId, interviewController.getInterviewProgress);
 interviewRouter.post('/:id/start', ownsId, interviewController.startInterview);
 interviewRouter.post('/:id/finalize', ownsId, interviewController.finalizeInterview);
+interviewRouter.post(
+  '/:id/transcribe',
+  ownsId,
+  transcribeLimiter,
+  // WAV audio arrives as a raw body; it is held in memory for this request only.
+  express.raw({ type: WAV_MIME_TYPES, limit: TRANSCRIBE_MAX_BYTES }),
+  interviewController.transcribeAnswer
+);
 interviewRouter.post('/:interviewId/questions/:questionId/answer', ownsInterview, interviewController.submitAnswer);
 interviewRouter.post('/:interviewId/questions/:questionId/evaluation', ownsInterview, evaluationController.evaluateAnswer);
 interviewRouter.get('/:interviewId/questions/:questionId/evaluation', ownsInterview, evaluationController.getEvaluation);
