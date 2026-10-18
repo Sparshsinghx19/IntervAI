@@ -1,0 +1,42 @@
+# Render Blueprint for the IntervAI API (Express). Secrets use `sync: false`:
+# Render asks for them when the Blueprint is created; they are never stored in Git.
+services:
+  - type: web
+    name: intervai-api
+    runtime: node
+    plan: free
+    region: ohio
+    # Install from the monorepo root so npm workspaces and .npmrc apply.
+    buildCommand: npm ci --include=dev && npm run build --workspace=api
+    startCommand: npm run start --workspace=api
+    # Fails (503) when the database is unreachable, so Render won't route to a broken instance.
+    healthCheckPath: /health/ready
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL # Neon connection string (sslmode=require)
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: QDRANT_URL
+        sync: false
+      - key: QDRANT_API_KEY
+        sync: false
+      # Exact web origin, e.g. https://intervai.vercel.app (no trailing slash).
+      - key: FRONTEND_ORIGINS
+        sync: false
+      - key: AUTH_COOKIE_SAMESITE
+        value: lax
+      - key: AUTH_SESSION_TTL_HOURS
+        value: "168"
+      # Browser -> Vercel proxy -> Render proxy -> API: two trusted hops for client IPs.
+      - key: TRUST_PROXY
+        value: "2"
+      # Reduced beta: no isolated production code runner yet. Coding questions are answered in text.
+      - key: CODE_EXECUTION_ENABLED
+        value: "false"

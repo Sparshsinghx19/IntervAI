@@ -8,6 +8,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { questionOriginLabel, researchNote } from '@/lib/adaptive-setup';
 import { CODING_UNAVAILABLE_NOTE, workspaceFor } from '@/lib/workspace-mode';
 import { sessionCompanion } from '@/lib/companion-status';
+import { API_URL } from '@/lib/api-client';
 import { VoiceAnswer } from '@/components/interview/VoiceAnswer';
 import { LazyCompactCoach } from '@/components/marketing/coach/LazyCoach';
 import { QuestionSource, SourcesDisclosure } from '@/components/interview/SourcesDisclosure';
@@ -147,7 +148,7 @@ function InterviewSessionContent() {
     setIsGeneratingReport(true);
     setReportError('');
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+    const apiUrl = API_URL;
 
     try {
       // 1. First check if a completed evaluation report is already stored in the DB (cached GET, zero AI calls)
@@ -182,7 +183,7 @@ function InterviewSessionContent() {
 
     const loadQuestions = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+        const apiUrl = API_URL;
         const [questionsRes, interviewRes, progressResult] = await Promise.all([
           apiFetch(`${apiUrl}/api/interviews/${id}/questions`),
           apiFetch(`${apiUrl}/api/interviews/${id}`),
@@ -339,7 +340,7 @@ function InterviewSessionContent() {
         : "Time's up. Answers you submitted before the deadline are being evaluated."
     );
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+    const apiUrl = API_URL;
     // The server's clock decides; if it says a moment remains, wait and ask again.
     for (let attempt = 0; attempt < 5; attempt++) {
       const outcome = await finalizeInterview(id, { apiUrl });
@@ -507,7 +508,7 @@ function InterviewSessionContent() {
     setIsSubmitting(true);
     setEvaluationStage('saving');
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+    const apiUrl = API_URL;
 
     const saveResult = await saveInterviewAnswer({
       interviewId: id as string,
@@ -592,7 +593,7 @@ function InterviewSessionContent() {
     setIsSubmitting(true);
     setEvaluationStage('saving');
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+    const apiUrl = API_URL;
 
     const saveResult = await saveInterviewAnswer({
       interviewId: id as string,
@@ -695,7 +696,7 @@ function InterviewSessionContent() {
       return;
     }
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+    const apiUrl = API_URL;
     try {
       const statusRes = await apiFetch(`${apiUrl}/api/interviews/${id}`);
       if (statusRes.ok) {

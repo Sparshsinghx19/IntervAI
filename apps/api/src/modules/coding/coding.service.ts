@@ -1,5 +1,5 @@
 import { db } from '../../prisma/db.js';
-import { CODING_PROBLEMS_CATALOG, effectiveQuestionType, findCodingProblemForQuestion } from './coding-problems.catalog.js';
+import { CODING_PROBLEMS_CATALOG, codeExecutionEnabled, effectiveQuestionType, findCodingProblemForQuestion } from './coding-problems.catalog.js';
 import { judge0Service, Judge0Service, RunnerUnavailableError } from './judge0.service.js';
 import { hiddenTestLoader, HiddenTestLoader } from './hidden-test-loader.js';
 import { buildExecutionHarness } from './coding-harness.js';
@@ -93,6 +93,10 @@ export class CodingService {
     language: SupportedLanguage;
     sourceCode: string;
   }): Promise<RunCodeResponse> {
+    if (!codeExecutionEnabled()) {
+      // Never reach a runner when public execution is switched off.
+      throw new RunnerUnavailableError('Code execution is not available in this beta. Answer coding questions in text.');
+    }
     if (!['cpp', 'python', 'java'].includes(options.language)) {
       const err = new Error(`Unsupported execution language '${options.language}'. Supported: C++, Python, Java.`);
       (err as any).code = 'BAD_REQUEST';
@@ -186,6 +190,10 @@ export class CodingService {
     language: SupportedLanguage;
     sourceCode: string;
   }): Promise<SubmitCodeResponse> {
+    if (!codeExecutionEnabled()) {
+      // Never reach a runner when public execution is switched off.
+      throw new RunnerUnavailableError('Code execution is not available in this beta. Answer coding questions in text.');
+    }
     if (!['cpp', 'python', 'java'].includes(options.language)) {
       const err = new Error(`Unsupported execution language '${options.language}'. Supported: C++, Python, Java.`);
       (err as any).code = 'BAD_REQUEST';

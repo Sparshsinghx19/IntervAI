@@ -38,4 +38,4 @@ export function workspaceFor(question: WorkspaceQuestion | null | undefined): Wo
 }
 
 export const CODING_UNAVAILABLE_NOTE =
-  'This was planned as a coding question, but there is no runnable version of it, so it can’t be executed. Answer in text: describe your approach, its time and space complexity, and the key code.';
+  'This is a coding question, but code can’t be run for it here, so answer in text: describe your approach, its time and space complexity, and the key code.';

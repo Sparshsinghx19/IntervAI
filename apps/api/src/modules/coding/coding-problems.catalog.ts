@@ -379,13 +379,24 @@ export function runnableProblemSlug(q: QuestionLike): string | null {
  * as CODING without a runnable catalog problem cannot be executed or submitted
  * as code, so it is answered (and counted, and evaluated) as a text question.
  */
+/**
+ * Public code execution can be switched off (CODE_EXECUTION_ENABLED=false), for
+ * example when no isolated production runner is available. Coding questions are
+ * then answered in text, through the same path as unmappable coding questions.
+ */
+export function codeExecutionEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+  return env.CODE_EXECUTION_ENABLED?.trim().toLowerCase() !== 'false';
+}
+
 export function effectiveQuestionType(q: QuestionLike): QuestionKind {
-  if (q.type === 'CODING') return runnableProblemSlug(q) ? 'CODING' : 'THEORY';
+  if (q.type === 'CODING') return runnableProblemSlug(q) && codeExecutionEnabled() ? 'CODING' : 'THEORY';
   return q.type === 'SYSTEM_DESIGN' ? 'SYSTEM_DESIGN' : 'THEORY';
 }
 
 /** Type and slug to store for a new question: CODING only when a runnable problem backs it. */
 export function classifyNewQuestion(q: QuestionLike): { type: QuestionKind; codingProblemSlug: string | null } {
-  const type = effectiveQuestionType(q);
-  return { type, codingProblemSlug: type === 'CODING' ? runnableProblemSlug(q) : null };
+  // Stored type does not depend on whether execution is currently switched on.
+  const slug = q.type === 'CODING' ? runnableProblemSlug(q) : null;
+  if (slug) return { type: 'CODING', codingProblemSlug: slug };
+  return { type: q.type === 'SYSTEM_DESIGN' ? 'SYSTEM_DESIGN' : 'THEORY', codingProblemSlug: null };
 }

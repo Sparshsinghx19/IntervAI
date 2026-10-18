@@ -1,4 +1,16 @@
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+/**
+ * Base URL of the API. "same-origin" (production) sends requests to this site's
+ * own /api path, which the Next.js server proxies to the API (see next.config.ts),
+ * so the session cookie stays first-party. Unset in local development.
+ */
+export function resolveApiUrl(configured: string | undefined): string {
+  const value = configured?.trim();
+  if (!value) return 'http://localhost:4000';
+  if (value === 'same-origin') return '';
+  return value.replace(/\/+$/, '');
+}
+
+export const API_URL = resolveApiUrl(process.env.NEXT_PUBLIC_API_URL);
 
 type SessionExpiredListener = () => void;
 const sessionExpiredListeners = new Set<SessionExpiredListener>();

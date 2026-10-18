@@ -1,7 +1,8 @@
 import { app } from './app.js';
 
-const port = 4000;
+// Hosting platforms provide the port; 4000 is the local default.
+const port = Number(process.env.PORT) || 4000;
 
 app.listen(port, () => {
-  console.log(`Express API is running on http://localhost:${port}`);
+  console.log(`Express API is listening on port ${port}`);
 });
