@@ -11,6 +11,9 @@
     "typescript": "^5.3.3"
   },
   "scripts": {
-    "postinstall": "prisma skills sync || exit 0"
+    "postinstall": "node -e \"try{require.resolve('prisma/package.json')}catch{process.exit(0)}require('child_process').spawnSync('prisma skills sync',{stdio:'inherit',shell:true})\""
+  },
+  "overrides": {
+    "react": "19.2.8"
   }
 }
