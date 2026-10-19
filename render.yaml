@@ -17,7 +17,7 @@ services:
         value: production
       - key: NODE_VERSION
         value: "22"
-      - key: DATABASE_URL # Neon connection string (sslmode=require)
+      - key: DATABASE_URL # Neon *pooled* connection string (host contains -pooler); migrations use the direct one locally
         sync: false
       - key: GEMINI_API_KEY
         sync: false
